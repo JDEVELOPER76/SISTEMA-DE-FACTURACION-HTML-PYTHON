@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Gestión de Clientes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin_clientes.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><span>My</span> SYS</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin"><i class="fa-solid fa-chart-pie nav-icon"></i> Dashboard</a></li>
+            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de ventas</a></li>
+            <li><a href="/admin/productos"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/clientes" class="active"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-alt nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="action-title">
+                <h2>Directorio de Clientes</h2>
+                <p>Registro de compradores y asignación simplificada en el sistema</p>
+            </div>
+        </header>
+
+        <main class="content-area">
+            
+            <section class="card">
+                <div class="card-header">
+                    <h3>Registrar Nuevo Cliente</h3>
+                    <i class="fa-solid fa-user-plus" style="color: var(--hadrox-blue);"></i>
+                </div>
+                <form action="/admin/clientes/nuevo" method="POST" class="form-container">
+                    <div class="form-group">
+                        <label>Nombre Completo / Razón Social</label>
+                        <input type="text" name="nombre" placeholder="Ej. Juan Pérez o Importadora Automotriz S.A." required>
+                    </div>
+                    <button type="submit" class="btn-submit">
+                        <i class="fa-solid fa-plus"></i> Añadir Cliente
+                    </button>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h3>Base de Datos de Clientes</h3>
+                    <span style="font-size: 12px; color: var(--hadrox-light); font-weight: 600;">Estatus: <span style="color: var(--hadrox-success);">En Línea</span></span>
+                </div>
+                
+                <div class="table-container">
+                    {% if clientes %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">Código (ID)</th>
+                                <th>Nombre Completo del Cliente</th>
+                                <th style="width: 80px; text-align: center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in clientes %}
+                            <tr>
+                                <td><span style="font-family: monospace; font-weight: 700; color: var(--hadrox-blue);">#00{{ c.id }}</span></td>
+                                <td><span style="font-weight: 600; color: var(--hadrox-navy);">👤 {{ c.nombre }}</span></td>
+                                <td style="text-align: center;">
+                                    <form action="/admin/clientes/eliminar/{{ c.id }}" method="POST" onsubmit="return confirm('¿Seguro que deseas eliminar a este cliente?');" style="display: inline;">
+                                        <button type="submit" class="btn-delete" title="Eliminar Cliente">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div style="padding: 40px; text-align: center; color: var(--hadrox-light);">
+                        <i class="fa-solid fa-users-slash" style="font-size: 32px; margin-bottom: 8px; color: var(--hadrox-border);"></i>
+                        <p style="font-weight: 500;">No hay clientes registrados en la base de datos.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+</body>
+</html>

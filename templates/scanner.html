@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Escáner de Barras</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/scanner.css') }}">
+    
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+</head>
+<body>
+
+    <!-- Audio para el beep -->
+    <audio id="beepSound" src="/static/sonidos/beep.mp3"></audio>
+
+    <div class="scanner-card" id="scannerApp">
+        <!-- Login Section -->
+        <div id="loginSection" class="login-section">
+            <h1><i class="fa-solid fa-barcode" style="color: var(--hadrox-blue);"></i> MySYS Scanner</h1>
+            <p>Inicia sesión para comenzar a escanear</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label><i class="fa-solid fa-user"></i> Usuario</label>
+                    <input type="text" id="username" placeholder="Ingresa tu usuario" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fa-solid fa-lock"></i> Contraseña</label>
+                    <input type="password" id="password" placeholder="Ingresa tu contraseña" required>
+                </div>
+                <button type="submit" class="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+            <div id="loginError" class="result-box hidden" style="margin-top: 12px; background-color: #fee2e2; color: #991b1b;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span id="errorMessage"></span>
+            </div>
+        </div>
+
+        <!-- Scanner Section (hidden initially) -->
+        <div id="scannerSection" style="display: none;">
+            <h1><i class="fa-solid fa-barcode" style="color: var(--hadrox-blue);"></i> MySYS Scanner</h1>
+            <p>Escanea productos y se agregarán automáticamente a la venta</p>
+            
+            <div class="user-info">
+                <span><i class="fa-solid fa-circle-user"></i> <span id="currentUser">-</span></span>
+                <button id="logoutBtn" class="btn-logout" style="background: none; color: var(--hadrox-red); border: none; cursor: pointer; font-size: 12px;">
+                    <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+            
+            <div id="reader"></div>
+
+            <div style="margin-top: 12px; padding: 10px; background-color: #f1f5f9; border-radius: 8px; text-align: center;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--hadrox-navy); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fa-solid fa-image"></i> O carga una foto:
+                    <input type="file" id="fotoInput" accept="image/*" style="display: none;">
+                </label>
+            </div>
+
+            <div class="result-box" id="result-text">
+                <span style="color: #94a3b8;">Esperando lectura...</span>
+            </div>
+            
+            <div id="status" class="status-badge">
+                <i class="fa-solid fa-circle-info"></i> No conectado
+            </div>
+
+            <div style="margin-top: 12px; font-size: 12px; color: #64748b;">
+                <i class="fa-solid fa-info-circle"></i> Los productos escaneados se agregarán automáticamente a tu sesión de ventas
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='js/scanner.js') }}"></script>
+</body>
+</html>

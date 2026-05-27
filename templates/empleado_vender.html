@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Terminal de Ventas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/empleado_vender.css') }}">
+</head>
+<body>
+
+    <div style="display: flex; flex-direction: column; width: 100%;">
+        <div class="top-navbar">
+            <span style="font-family: 'Poppins'; font-weight: 600; font-size: 14px; letter-spacing: 0.5px;">My <span style="color:var(--hadrox-blue)">SYS</span></span>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div id="scannerStatus" class="scanner-status">
+                    <i class="fa-solid fa-barcode"></i>
+                    <span>Esperando escáner...</span>
+                </div>
+                <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+            </div>
+        </div>
+
+        <div class="sales-container">
+            <section class="catalog-section">
+                <div class="catalog-header">
+                    <h2>Módulo de Facturación</h2>
+                    <div class="search-container">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="search-input" class="search-input" placeholder="Buscar producto por nombre..." oninput="filtrarProductos()">
+                    </div>
+                </div>
+
+                <div class="products-grid" id="products-grid">
+                    {% for p in productos %}
+                    <div class="product-card" data-nombre="{{ p.nombre | lower }}" data-id="{{ p.id }}">
+                        <div class="product-image-container">
+                            {% if p.imagen_url %}
+                                {% if p.imagen_url.startswith('http://') or p.imagen_url.startswith('https://') or p.imagen_url.startswith('/') %}
+                                    <img src="{{ p.imagen_url }}" alt="{{ p.nombre }}" class="product-img">
+                                {% else %}
+                                    <img src="/{{ p.imagen_url }}" alt="{{ p.nombre }}" class="product-img">
+                                {% endif %}
+                            {% else %}
+                                <div class="no-image-placeholder">
+                                    <i class="fa-solid fa-box-open"></i>
+                                    <span>Sin Foto</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="product-info">
+                            <h4>{{ p.nombre }}</h4>
+                            
+                            <div class="product-tech-details">
+                                <div class="tech-row">
+                                    <span><i class="fa-solid fa-barcode"></i> {{ p.codigo_barras if p.codigo_barras else 'S/C' }}</span>
+                                    <span style="font-weight: 600; color: #475569;">
+                                        IVA {{ p.iva | int }}%
+                                    </span>
+                                </div>
+                                <div class="tech-row" style="margin-top: 1px;">
+                                    <span>Stock disponible:</span>
+                                    <span class="badge-stock {% if p.stock > 0 %}in-stock{% else %}low-stock{% endif %}">
+                                        {{ p.stock }} und
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 2px;">
+                                <p class="product-price">${{ "%.2f"|format(p.precio) }}</p>
+                                <button class="btn-add-cart" onclick="agregarAlCarrito({{ p.id }}, '{{ p.nombre }}', {{ p.precio }}, {{ p.iva or 0 }})">
+                                    <i class="fa-solid fa-plus"></i> Añadir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="checkout-section">
+                <div class="checkout-header">
+                    <i class="fa-solid fa-basket-shopping"></i>
+                    <h3>Orden de Despacho</h3>
+                </div>
+
+                <div class="transaction-config">
+                    <div class="config-group">
+                        <label for="cliente-select">Cliente</label>
+                        <select id="cliente-select" class="config-select">
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nombre }} ({{ c.cedula }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="pago-select">Método de Pago</label>
+                        <select id="pago-select" class="config-select">
+                            <option value="Efectivo" selected>💵 Efectivo</option>
+                            <option value="Transferencia">🏦 Transferencia Bancaria</option>
+                            <option value="Tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cart-items-container" id="cart-container">
+                    <p style="text-align:center; color: var(--hadrox-light); font-size:13px; margin-top:40px; font-weight:500;">El carrito de compras está vacío.</p>
+                </div>
+
+                <div class="totals-panel">
+                    <div class="total-row">
+                        <span style="color: var(--hadrox-light)">Subtotal 0%:</span>
+                        <span id="subtotal-0">$0.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span style="color: var(--hadrox-light)">Subtotal IVA:</span>
+                        <span id="subtotal-iva">$0.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span style="color: var(--hadrox-light)">Impuesto (IVA):</span>
+                        <span id="total-impuesto">$0.00</span>
+                    </div>
+                    <div class="total-row grand-total">
+                        <span>Total Cobrar:</span>
+                        <span id="grand-total">$0.00</span>
+                    </div>
+                </div>
+
+                <button class="btn-checkout" onclick="confirmarVenta()">
+                    <i class="fa-solid fa-cash-register"></i> Cobrar y Registrar Venta
+                </button>
+            </section>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='js/empleado_vender.js') }}"></script>
+
+    <!-- Modal de Confirmación de Venta -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <i class="fa-solid fa-check-circle" style="font-size: 22px;"></i>
+                <h2>Confirmar Venta</h2>
+            </div>
+            <div class="modal-body">
+                <div class="confirmation-details">
+                    <div class="detail-row">
+                        <span class="label"><i class="fa-solid fa-user"></i> Cliente:</span>
+                        <span class="value" id="modal-cliente">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="label"><i class="fa-solid fa-credit-card"></i> Método de Pago:</span>
+                        <span class="value" id="modal-metodo">-</span>
+                    </div>
+                    <div class="detail-row total">
+                        <span class="label"><i class="fa-solid fa-calculator"></i> Total a Cobrar:</span>
+                        <span class="value" id="modal-total">$0.00</span>
+                    </div>
+                </div>
+                <div class="confirmation-message">
+                    <i class="fa-solid fa-info-circle"></i> ¿Deseas proceder con esta transacción?
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-modal cancel" onclick="cerrarModal()">
+                    <i class="fa-solid fa-times"></i> Cancelar
+                </button>
+                <button class="btn-modal confirm" onclick="confirmarOperacion()">
+                    <i class="fa-solid fa-check"></i> Confirmar Venta
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

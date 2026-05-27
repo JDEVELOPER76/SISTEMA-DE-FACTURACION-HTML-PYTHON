@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MySYS Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/index.css') }}">
+</head>
+<body>
+
+<div class="login-container">
+    <!-- Lado izquierdo: imagen PNG local + branding -->
+    <div class="brand-panel">
+        <div class="brand-content">
+            <!-- 
+                ************ IMPORTANTE ************
+                Se utiliza una imagen PNG local con nombre "login-illustration.png".
+                Si tu archivo tiene otro nombre (ej: "logo.png", "ilustracion.png")
+                modifica el atributo src="./tu-imagen.png" para que coincida.
+                Actualmente apunta a "./login-illustration.png" como placeholder.
+                Para que funcione correctamente, sustituye por la ruta de tu PNG.
+            -->
+            <img src="./static/logo/fondo.png" 
+                 alt="Ilustración de seguridad" 
+                 onerror="this.onerror=null; this.src='https://placehold.co/400x300?text=Logo+o+Imagen'; this.style.opacity='0.8'">
+            <div class="brand-tagline">
+                Acceso A MySYS
+            </div>
+            <div class="decor-line" style="margin: 20px auto 0 auto;"></div>
+        </div>
+    </div>
+
+    <!-- Lado derecho: panel de login con los campos exactos username/password -->
+    <div class="login-panel">
+        <div class="login-header">
+            <h2>Bienvenido</h2>
+            <p>Ingresa tus credenciales para continuar</p>
+        </div>
+
+        <!-- Se mantiene el mismo método POST y los mismos name / id que requiere la API -->
+        <form action="/login" method="post">
+            <div class="field">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" name="username" required autocomplete="username" placeholder="nombre.usuario">
+            </div>
+
+            <div class="field">
+                <label for="password">Contraseña</label>
+                <div class="password-wrapper">
+                    <input type="password" id="password" name="password" required autocomplete="current-password" placeholder="••••••••">
+                    <button type="button" class="toggle-btn" onclick="togglePassword()">Ver</button>
+                </div>
+            </div>
+
+            <button type="submit">Entrar</button>
+        </form>
+
+        <div id="errorMsg" class="error"></div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', path='js/index.js') }}"></script>
+
+<!-- Nota para el desarrollador: la imagen PNG local esperada es "./login-illustration.png"
+     Si tu PNG tiene otro nombre (ej: "foto.png", "logo.png", "ilustracion.png") cambia el atributo src 
+     en la etiqueta img dentro del div con clase "brand-content". 
+     Mantén el resto de la estructura sin alterar para que el login siga funcionando con tu API.
+     Los nombres de los campos "username" y "password" están intactos, así como el método POST y action="/login".
+-->
+</body>
+</html>

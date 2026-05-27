@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><span>My</span> SYS</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin" class="active"><i class="fa-solid fa-chart-pie nav-icon"></i> Dashboard</a></li>
+            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de Ventas</a></li>
+            <li><a href="/admin/productos"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/clientes"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-alt nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>   
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="action-title">
+                <h2>Panel de Control General</h2>
+                <p>Monitoreo en tiempo real del rendimiento financiero y transacciones</p>
+            </div>
+        </header>
+
+        <main class="content-area">
+            
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Total Histórico</p>
+                        <h3 class="currency-format">{{ total_historico }}</h3>
+                    </div>
+                    <div class="metric-icon icon-success">
+                        <i class="fa-solid fa-wallet"></i>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Ventas Hoy</p>
+                        <h3 class="currency-format">{{ total_hoy }}</h3>
+                    </div>
+                    <div class="metric-icon icon-blue">
+                        <i class="fa-solid fa-arrow-trend-up"></i>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h3>Rendimiento Recaudado por Día</h3>
+                    <i class="fa-solid fa-calendar-days" style="color: var(--hadrox-blue);"></i>
+                </div>
+                
+                <div class="table-container">
+                    {% if ventas_por_dia %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fecha del Día</th>
+                                <th>Cantidad de Ventas</th>
+                                <th>Total Recaudado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in ventas_por_dia %}
+                            <tr>
+                                <td><span style="font-weight: 600; color: var(--hadrox-navy);">📅 {{ r.dia }}</span></td>
+                                <td><span style="color: var(--hadrox-light); font-weight: 500;">{{ r.cantidad_ventas }} transacciones</span></td>
+                                <td><span class="currency-format" style="font-weight: 700; color: var(--hadrox-success);">{{ r.total_recaudado }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="padding: 30px; color: var(--hadrox-light); text-align: center; font-weight: 500;">No hay historial de días registrados todavía.</p>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', path='js/admin.js') }}"></script>
+</body>
+</html>

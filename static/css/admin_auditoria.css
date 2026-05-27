@@ -1,0 +1,144 @@
+:root {
+    --hadrox-navy: #0f172a;      
+    --hadrox-blue: #2563eb;      
+    --hadrox-bg: #f8fafc;        
+    --hadrox-border: #e2e8f0;    
+    --hadrox-text: #334155;      
+    --hadrox-light: #64748b;     
+    --hadrox-success: #10b981;   
+    --hadrox-danger: #ef4444;    
+    --hadrox-warning: #f59e0b;
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: var(--hadrox-text);
+    display: flex;
+    min-height: 100vh;
+}
+
+/* SIDEBAR COMPLETO DE HADROX */
+.sidebar {
+    width: 260px;
+    background-color: var(--hadrox-navy);
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    left: 0; top: 0; z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 30px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-header h1 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sidebar-header h1 span { color: var(--hadrox-blue); }
+
+.nav-menu { list-style: none; padding: 24px 12px; flex: 1; display: flex; flex-direction: column; }
+.nav-menu li { margin-bottom: 6px; }
+.nav-menu li.logout-item { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); }
+.nav-menu a {
+    display: flex; align-items: center; padding: 12px 16px;
+    color: #94a3b8; text-decoration: none; border-radius: 10px;
+    font-size: 14px; font-weight: 500; transition: all 0.2s ease;
+}
+
+.nav-menu a:hover, .nav-menu a.active {
+    background-color: rgba(255,255,255,0.06); color: #ffffff;
+}
+
+.nav-menu a.active {
+    background-color: var(--hadrox-blue);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+.nav-icon { width: 20px; margin-right: 12px; text-align: center; font-size: 16px; }
+
+/* CONTENIDO PRINCIPAL */
+.main-content {
+    margin-left: 260px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: calc(100% - 260px);
+}
+
+.topbar {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--hadrox-border);
+    position: sticky; top: 0; z-index: 900;
+}
+
+.action-title h2 { font-size: 20px; font-weight: 700; color: var(--hadrox-navy); }
+.action-title p { font-size: 13px; color: var(--hadrox-light); margin-top: 2px; }
+
+.logout-btn {
+    display: flex; align-items: center; padding: 12px 16px;
+    color: #94a3b8; text-decoration: none; border-radius: 10px;
+    font-size: 14px; font-weight: 500; transition: all 0.2s ease; gap: 12px;
+}
+.logout-btn:hover { background-color: rgba(255,255,255,0.06); color: #ef4444; }
+
+.content-area {
+    padding: 30px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 1600px;
+    width: 100%;
+}
+
+/* DISEÑO DE TABLA */
+.card {
+    background: #ffffff; border-radius: 16px; border: 1px solid var(--hadrox-border);
+    box-shadow: var(--shadow); overflow: hidden;
+}
+
+.card-header {
+    padding: 20px 24px; border-bottom: 1px solid var(--hadrox-border);
+    display: flex; align-items: center; justify-content: space-between; background: #fafafa;
+}
+
+.card-header h3 { font-size: 15px; font-weight: 600; color: var(--hadrox-navy); }
+
+.table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+    background-color: #f8fafc; padding: 14px 24px; text-align: left;
+    font-size: 11px; font-weight: 700; color: var(--hadrox-light);
+    text-transform: uppercase; border-bottom: 2px solid var(--hadrox-border);
+}
+
+td { padding: 16px 24px; border-bottom: 1px solid var(--hadrox-border); font-size: 13.5px; vertical-align: middle; }
+tbody tr:hover { background-color: #f8fafc; }
+
+/* DISTINTIVOS (BADGES) */
+.badge {
+    padding: 5px 10px; border-radius: 6px; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; display: inline-block;
+}
+.badge-insert { background-color: rgba(16, 185, 129, 0.1); color: var(--hadrox-success); }
+.badge-update { background-color: rgba(245, 158, 11, 0.1); color: var(--hadrox-warning); }
+.badge-delete { background-color: rgba(239, 68, 68, 0.1); color: var(--hadrox-danger); }
+.badge-login { background-color: rgba(37, 99, 235, 0.1); color: var(--hadrox-blue); }
+.badge-logout { background-color: rgba(100, 116, 139, 0.1); color: var(--hadrox-light); }

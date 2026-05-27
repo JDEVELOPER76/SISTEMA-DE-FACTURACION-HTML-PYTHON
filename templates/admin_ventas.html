@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Historial de Ventas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin_ventas.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>My<span>SYS</span></h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin"><i class="fas fa-tachometer-alt nav-icon"></i> Dashboard</a></li>
+            <li><a href="/admin/ventas" class="active"><i class="fas fa-receipt nav-icon"></i> Historial de Ventas</a></li>
+            <li><a href="/admin/productos"><i class="fas fa-box-open nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/clientes"><i class="fas fa-users nav-icon"></i> Clientes</a></li>
+            <li><a href="/admin/auditoria"><i class="fas fa-shield-alt nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/usuarios"><i class="fas fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="action-title">
+                <h2>Historial de Ventas</h2>
+                <p>Consulta todas las transacciones registradas en el sistema.</p>
+            </div>
+            <div class="user-profile">
+                <div class="avatar">{{ username[0] if username else 'U' }}</div>
+                <span>{{ username if username else 'Usuario' }}</span>
+            </div>
+        </header>
+
+        <main class="content-area">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Últimas Transacciones</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Venta</th>
+                                <th>Cliente</th>
+                                <th>Empleado</th>
+                                <th>Fecha</th>
+                                <th>Método Pago</th>
+                                <th>Estado</th>
+                                <th>Total</th>
+                                <th>Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for venta in ventas_con_productos %}
+                            <tr class="venta-row" data-venta-id="{{ venta.id }}">
+                                <td>#{{ venta.id }}</td>
+                                <td>{{ venta.nombre_cliente or 'Consumidor Final' }}</td>
+                                <td>{{ venta.nombre_empleado or 'N/A' }}</td>
+                                <td>{{ venta.fecha_completa.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>{{ venta.metodo_pago }}</td>
+                                <td><span class="status-badge status-{{ venta.estado.lower() }}">{{ venta.estado }}</span></td>
+                                <td class="total-cell">${{ "%.2f"|format(venta.total) }}</td>
+                                <td>
+                                    <button class="expand-btn" onclick="toggleDetails({{ venta.id }})">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="details-row" id="details-{{ venta.id }}">
+                                <td colspan="8" class="details-cell">
+                                    <div class="details-content">
+                                        <h4>Productos en esta venta</h4>
+                                        <ul class="product-list">
+                                            {% for p in venta.productos %}
+                                            <li>
+                                                <span class="product-name">📦 {{ p.nombre_producto }}</span>
+                                                <span class="product-details">
+                                                    {{ p.cantidad }} x ${{ "%.2f"|format(p.precio_unitario) }} (IVA: {{ p.iva }}%)
+                                                </span>
+                                                <span class="product-subtotal">${{ "%.2f"|format(p.subtotal) }}</span>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 40px;">No hay ventas registradas todavía.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', path='js/admin_ventas.js') }}"></script>
+</body>
+</html>

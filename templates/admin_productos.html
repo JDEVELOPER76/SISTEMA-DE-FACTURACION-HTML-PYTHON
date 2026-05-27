@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Control de Inventario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin_productos.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><span>My</span> SYS</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin"><i class="fa-solid fa-chart-pie nav-icon"></i> Dashboard</a></li>
+            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de ventas</a></li>
+            <li><a href="/admin/productos" class="active"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/clientes"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-alt nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="action-title">
+                <h2>Control de Almacén e Inventario</h2>
+                <p>Gestión centralizada de artículos, impuestos y optimización de stock (Doble clic en fila para editar)</p>
+            </div>
+        </header>
+
+        <main class="content-area">
+            
+            <section class="card">
+                <div class="card-header">
+                    <h3>Ingresar Nuevo Artículo al Sistema</h3>
+                    <i class="fa-solid fa-folder-plus" style="color: var(--hadrox-blue);"></i>
+                </div>
+                <form action="/admin/productos/nuevo" method="POST" enctype="multipart/form-data">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Nombre Comercial</label>
+                            <input type="text" name="nombre" placeholder="Ej. Kit Embrague Spark" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Barras (Único)</label>
+                            <input type="text" name="codigo_barras" placeholder="Ingrese un codigo de barras" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Proveedor Distribuidor</label>
+                            <input type="text" name="proveedor" placeholder="Ej. Repuestos Mundiales S.A." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <input type="text" name="categoria" placeholder="Ej. Transmisión" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Unitario (Sin IVA)</label>
+                            <input type="number" step="0.01" name="precio" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa de IVA</label>
+                            <input type="number" step="0.01" name="iva" placeholder="0.00" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Stock Inicial</label>
+                            <input type="number" name="stock" value="0" min="0" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Fotografía del Producto (Local o URL)</label>
+                            <div class="media-inputs">
+                                <div class="file-btn">
+                                    <i class="fa-solid fa-image" style="margin-right:6px;"></i> Subir Archivo PNG/JPG
+                                    <input type="file" name="imagen_archivo" accept="image/png, image/jpeg, image/jpg" id="fileInput" onchange="actualizarNombreArchivo('fileInput', 'fileSelectedName', 'urlInput')">
+                                </div>
+                                <input type="text" name="imagen_url" id="urlInput" placeholder="O pegue un enlace de internet (https://...)">
+                            </div>
+                            <span id="fileSelectedName" style="font-size: 11px; color: var(--hadrox-blue); margin-top: 4px; font-weight: 600;"></span>
+                        </div>
+                    </div>
+                    <div class="form-footer">
+                        <button type="submit" class="btn-submit">
+                            <i class="fa-solid fa-check"></i> Registrar en Base de Datos
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                    <h3>Repositorio General de Productos</h3>
+                    <span style="font-size: 12px; color: var(--hadrox-light); font-weight: 600;">Estatus del Almacén: <span style="color: var(--hadrox-success);">Activo</span></span>
+                </div>
+                
+                <div class="table-container">
+                    {% if productos %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Artículo Identificado</th>
+                                <th>Proveedor</th>
+                                <th>Categoría</th>
+                                <th>Disponibilidad en Stock</th>
+                                <th>Finanzas (PVP)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in productos %}
+                            <tr ondblclick="abrirPanelEdicion(this)" 
+                                data-id="{{ p.id }}"
+                                data-nombre="{{ p.nombre }}"
+                                data-codigo="{{ p.codigo_barras }}"
+                                data-proveedor="{{ p.proveedor }}"
+                                data-categoria="{{ p.categoria }}"
+                                data-precio="{{ p.precio }}"
+                                data-iva="{{ p.iva }}"
+                                data-stock="{{ p.stock }}"
+                                data-imgurl="{{ p.imagen_url if p.imagen_url else '' }}">
+                                <td>
+                                    <div class="item-meta">
+                                        {% if p.imagen_url %}
+                                            <img src="{{ p.imagen_url }}" class="item-img" alt="Prod">
+                                        {% else %}
+                                            <div class="item-img"><i class="fa-solid fa-box-open" style="color:#94a3b8;"></i></div>
+                                        {% endif %}
+                                        <div class="item-info">
+                                            <strong>{{ p.nombre }}</strong>
+                                            <span>📟 ID: {{ p.codigo_barras }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span style="font-weight: 500; color: var(--hadrox-navy);">🏢 {{ p.proveedor }}</span></td>
+                                <td><span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size:12px; font-weight:500;">{{ p.categoria }}</span></td>
+                                <td>
+                                    {% if p.stock == 0 %}
+                                        <span class="badge badge-danger">Sin Stock (Agotado)</span>
+                                    {% elif p.stock <= 5 %}
+                                        <span class="badge badge-warning">Reserva Crítica ({{ p.stock }} u.)</span>
+                                    {% else %}
+                                        <span class="badge badge-success">Optimizado ({{ p.stock }} u.)</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="price-text currency-format">{{ p.precio }}</div>
+                                    <small style="color: var(--hadrox-success); font-weight: 600; font-size: 11px;">+{{ p.iva }}% IVA incluido</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div style="padding: 60px; text-align: center; color: var(--hadrox-light);">
+                        <i class="fa-solid fa-boxes-stacked" style="font-size: 40px; margin-bottom: 12px; color: var(--hadrox-border);"></i>
+                        <p style="font-weight: 500;">No se registran artículos en la base de datos local.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-pen-to-square"></i> Modificar Ficha de Producto</h3>
+                <button class="modal-close" onclick="cerrarPanelEdicion()">&times;</button>
+            </div>
+            <form id="editForm" method="POST" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="form-grid" style="padding: 20px;">
+                        <div class="form-group">
+                            <label>Nombre Comercial</label>
+                            <input type="text" name="nombre" id="edit_nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Barras (Único)</label>
+                            <input type="text" name="codigo_barras" id="edit_codigo" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Proveedor Distribuidor</label>
+                            <input type="text" name="proveedor" id="edit_proveedor" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <input type="text" name="categoria" id="edit_categoria" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Precio Unitario (Sin IVA)</label>
+                            <input type="number" step="0.01" name="precio" id="edit_precio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Tarifa de IVA</label>
+                            <input type="number" step="0.01" name="iva" id="edit_iva" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cantidad en Stock</label>
+                            <input type="number" name="stock" id="edit_stock" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Actualizar Imagen (Opcional)</label>
+                            <div class="media-inputs">
+                                <div class="file-btn">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Nuevo Archivo
+                                    <input type="file" name="imagen_archivo" accept="image/png, image/jpeg, image/jpg" id="editFileInput" onchange="actualizarNombreArchivo('editFileInput', 'editFileSelectedName', 'editUrlInput')">
+                                </div>
+                                <input type="text" name="imagen_url" id="editUrlInput" placeholder="O pegue una nueva URL">
+                            </div>
+                            <span id="editFileSelectedName" style="font-size: 11px; color: var(--hadrox-blue); margin-top: 4px; font-weight: 600;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-footer" style="padding: 15px 20px 20px 20px; border-top: 1px solid var(--hadrox-border); gap: 10px;">
+                    <button type="button" class="btn-secondary" onclick="cerrarPanelEdicion()">Cancelar</button>
+                    <button type="submit" class="btn-submit"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='js/admin_productos.js') }}"></script>
+</body>
+</html>
