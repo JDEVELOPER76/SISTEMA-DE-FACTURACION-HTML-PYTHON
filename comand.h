@@ -16,3 +16,5 @@ buscar en google como instalar mkcert con winget
 --ssl-certfile=192.168.1.4+2.pem --ssl-keyfile=192.168.1.4+2-key.pem
 remplaza los nombre .pem por los que que te arroja el certificado , recuerda que si el pc se apaga debes regenerar los 
 certificados 
+
+#nuva funcion para poder usar una apk para android
