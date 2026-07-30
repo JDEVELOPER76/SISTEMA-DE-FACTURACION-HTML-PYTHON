@@ -7,4 +7,3 @@ nuevas funciones de el sistema obtiene nueva version con websockets podras ver a
 -exportar e importar las bases de datos
 -crear un sistema para poder generar facturas a traves de las ventas 
 -posibiblidad de agregar un sistema de mensajes para poder interactuar usando solo el sistema 
--
