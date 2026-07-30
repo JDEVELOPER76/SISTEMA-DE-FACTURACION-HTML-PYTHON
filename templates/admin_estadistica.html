@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Estadísticas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --bg-sidebar: #1e293b;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --text-sidebar: #cbd5e1;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --success-text: #065f46;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --warning-text: #92400e;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --danger-text: #991b1b;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            color: var(--text-sidebar);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h1 {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'Poppins', 'Inter', sans-serif;
+        }
+
+        .sidebar-header h1 span {
+            color: var(--primary);
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 0 0.75rem;
+            list-style: none;
+        }
+
+        .nav-menu li { margin-bottom: 0.25rem; }
+
+        .nav-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-sidebar);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-menu li a:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .nav-menu li a.active {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+        }
+
+        .nav-icon { width: 18px; text-align: center; }
+
+        .logout-item {
+            margin-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1rem;
+        }
+
+        .logout-item a {
+            color: #fca5a5 !important;
+        }
+
+        .logout-item a:hover {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            color: #fecaca !important;
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .topbar {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .action-title h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+            font-family: 'Poppins', 'Inter', sans-serif;
+        }
+
+        .action-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* --- Metrics --- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .metric-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .metric-icon.icon-success { background: var(--success-bg); color: var(--success-text); }
+        .metric-icon.icon-blue { background: var(--primary-light); color: var(--primary); }
+        .metric-icon.icon-warning { background: var(--warning-bg); color: var(--warning-text); }
+        .metric-icon.icon-danger { background: var(--danger-bg); color: var(--danger-text); }
+
+        .currency-format::before { content: "$"; }
+
+        /* --- Charts --- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+
+        /* --- Tables --- */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-body);
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9fafb; }
+
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-success { background: var(--success-bg); color: var(--success-text); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
+        .badge-danger { background: var(--danger-bg); color: var(--danger-text); }
+        .badge-info { background: var(--primary-light); color: var(--primary); }
+
+        .product-list {
+            list-style: none;
+            font-size: 0.85rem;
+        }
+        .product-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.2rem 0;
+            border-bottom: 1px dashed var(--border);
+        }
+        .product-list li:last-child { border-bottom: none; }
+
+        /* --- Filtros --- */
+        .filters-bar {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 0.45rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: var(--bg-card);
+        }
+
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+            body {
+                flex-direction: column;
+            }
+            .metrics-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            .filters-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><span>My</span> SYS</h1>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="/admin"><i class="fa-solid fa-chart-pie nav-icon"></i> Dashboard</a></li>
+            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de Ventas</a></li>
+            <li><a href="/admin/productos"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/clientes"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
+            <li><a href="/admin/estadistica" class="active"><i class="fa-solid fa-chart-line nav-icon"></i> Estadísticas</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-halved nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li><a href="/admin/en_linea"><i class="fa-solid fa-circle-nodes nav-icon"></i> Usuarios en línea</a></li>
+            <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
+        </ul>
+    </aside>
+
+    <div class="main-content">
+        <header class="topbar">
+            <div class="action-title">
+                <h2>Estadísticas de Ventas</h2>
+                <p>Análisis detallado del comportamiento de ventas y rendimiento del negocio</p>
+            </div>
+            <div class="user-profile pm-user-menu" id="pmUserMenu">
+                <button class="pm-user-trigger" onclick="pmToggleMenu()" type="button">
+                    <span class="pm-avatar-wrap" id="pmAvatarWrap">
+                        {% if foto %}
+                        <img src="{{ foto }}" alt="{{ username }}">
+                        {% else %}
+                        <span class="avatar">{{ (username[0] if username else 'A') | upper }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="pm-user-name" id="pmUserName">{{ username or "Admin" }}</span>
+                    <i class="fa-solid fa-chevron-down pm-chevron"></i>
+                </button>
+                <div class="pm-dropdown">
+                    <a href="#" onclick="event.preventDefault(); pmAbrirPerfil();"><i class="fa-solid fa-user-gear"></i> Mi perfil</a>
+                    <div class="pm-divider"></div>
+                    <a href="/logout" class="pm-logout"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Filtros -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label><i class="fa-regular fa-calendar"></i> Periodo:</label>
+                    <select id="periodoSelect">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="15">Últimos 15 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                        <option value="365">Último año</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i class="fa-regular fa-calendar-days"></i> Desde:</label>
+                    <input type="date" id="fechaDesde">
+                </div>
+                <div class="filter-group">
+                    <label><i class="fa-regular fa-calendar-days"></i> Hasta:</label>
+                    <input type="date" id="fechaHasta">
+                </div>
+                <button class="btn-primary" style="padding: 0.45rem 1.25rem; border: none; border-radius: 8px; background: var(--primary); color: white; font-weight: 600; cursor: pointer;">
+                    <i class="fa-solid fa-filter"></i> Aplicar
+                </button>
+            </div>
+
+            <!-- Métricas -->
+            <section class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Ventas del Periodo</p>
+                        <h3 class="currency-format">{{ total_periodo or 0 }}</h3>
+                    </div>
+                    <div class="metric-icon icon-success">
+                        <i class="fa-solid fa-dollar-sign"></i>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Total de Ventas</p>
+                        <h3>{{ total_ventas_periodo or 0 }}</h3>
+                    </div>
+                    <div class="metric-icon icon-blue">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Ticket Promedio</p>
+                        <h3 class="currency-format">{{ ticket_promedio or 0 }}</h3>
+                    </div>
+                    <div class="metric-icon icon-warning">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <p>Productos Vendidos</p>
+                        <h3>{{ productos_vendidos or 0 }}</h3>
+                    </div>
+                    <div class="metric-icon icon-danger">
+                        <i class="fa-solid fa-cubes"></i>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gráficas principales -->
+            <section class="charts-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-bar" style="color: var(--primary); margin-right: 0.5rem;"></i> Ventas por Día</h3>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Evolución diaria</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="ventasDiariasChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-doughnut" style="color: var(--primary); margin-right: 0.5rem;"></i> Métodos de Pago</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="metodosPagoChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gráficas secundarias -->
+            <section class="charts-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-ranking-star" style="color: var(--primary); margin-right: 0.5rem;"></i> Top 5 Productos Más Vendidos</h3>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="topProductosChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-users" style="color: var(--primary); margin-right: 0.5rem;"></i> Top 5 Clientes</h3>
+                    </div>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="topClientesChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Empleados con más ventas -->
+            <section class="card">
+                <div class="card-header">
+                    <h3><i class="fa-solid fa-user-tie" style="color: var(--primary); margin-right: 0.5rem;"></i> Rendimiento por Empleado</h3>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">Total facturado por vendedor</span>
+                </div>
+                <div class="table-container">
+                    {% if empleados_ventas %}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Empleado</th>
+                                <th>Ventas Realizadas</th>
+                                <th>Total Facturado</th>
+                                <th>Ticket Promedio</th>
+                                <th>Rendimiento</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for emp in empleados_ventas %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td><strong>{{ emp.nombre_empleado }}</strong></td>
+                                <td>{{ emp.cantidad_ventas }}</td>
+                                <td><strong class="currency-format">{{ "%.2f"|format(emp.total_facturado) }}</strong></td>
+                                <td class="currency-format">{{ "%.2f"|format(emp.ticket_promedio) }}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div style="flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+                                            <div style="height: 100%; width: {{ emp.porcentaje }}%; background: var(--primary); border-radius: 3px;"></div>
+                                        </div>
+                                        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">{{ "%.0f"|format(emp.porcentaje) }}%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                        <i class="fa-solid fa-inbox" style="font-size: 1.5rem; display: block; margin-bottom: 0.5rem;"></i>
+                        No hay datos de ventas por empleado aún.
+                    </p>
+                    {% endif %}
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Datos desde el backend (inyectados por Jinja2)
+            const ventasPorDia = {{ ventas_por_dia|tojson|safe }};
+            const metodosPago = {{ metodos_pago|tojson|safe }};
+            const topProductos = {{ top_productos|tojson|safe }};
+            const topClientes = {{ top_clientes|tojson|safe }};
+
+            // --- Gráfica de Ventas por Día ---
+            const ctx1 = document.getElementById('ventasDiariasChart').getContext('2d');
+            const labels = ventasPorDia.map(item => item.dia || 'Sin fecha');
+            const data = ventasPorDia.map(item => item.total_recaudado || 0);
+
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Recaudado ($)',
+                        data: data,
+                        backgroundColor: 'rgba(79, 70, 229, 0.7)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- Gráfica de Métodos de Pago ---
+            const ctx2 = document.getElementById('metodosPagoChart').getContext('2d');
+            const metodosLabels = metodosPago.map(item => item.metodo_pago || 'Otro');
+            const metodosData = metodosPago.map(item => item.cantidad || 0);
+            const colores = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: metodosLabels,
+                    datasets: [{
+                        data: metodosData,
+                        backgroundColor: colores.slice(0, metodosLabels.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 12,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    },
+                    cutout: '60%'
+                }
+            });
+
+            // --- Gráfica de Top 5 Productos ---
+            const ctx3 = document.getElementById('topProductosChart').getContext('2d');
+            const prodLabels = topProductos.map(item => item.nombre_producto || 'Producto');
+            const prodData = topProductos.map(item => item.cantidad_vendida || 0);
+
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: prodLabels,
+                    datasets: [{
+                        label: 'Unidades Vendidas',
+                        data: prodData,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+            // --- Gráfica de Top 5 Clientes ---
+            const ctx4 = document.getElementById('topClientesChart').getContext('2d');
+            const cliLabels = topClientes.map(item => item.nombre_cliente || 'Cliente');
+            const cliData = topClientes.map(item => item.total_gastado || 0);
+
+            new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: cliLabels,
+                    datasets: [{
+                        label: 'Total Gastado ($)',
+                        data: cliData,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', path='js/presencia.js') }}"></script>
+    {% include "_perfil_modales.html" %}
+</body>
+</html>

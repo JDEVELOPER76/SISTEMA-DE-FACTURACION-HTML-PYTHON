@@ -1,12 +1,15 @@
-from fastapi import FastAPI, Request 
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from contextlib import asynccontextmanager
+import asyncio
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import Form, HTTPException , File , UploadFile
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Set
 import secrets
+from decimal import Decimal, ROUND_HALF_UP
 from herramientas.secret_key import LLAVE_SECRETA
 from datetime import datetime , timedelta
 from database.login import UserDB
@@ -17,18 +20,175 @@ from database.ventas import Venta
 from database.auditoria import AuditoriaDB
 from database.empleados import EmpleadoDB, Empleado
 from user.ventas import DataVenta
+from herramientas.mi_ip import obtener_ip_local
+from py2exe_helper import resource_path
+@asynccontextmanager
+async def lifespan(app: FastAPI):
 
+    async def periodic_cleanup():
+        while True:
+            await asyncio.sleep(3600)  # Cada hora
+            limpiar_sesiones_antiguas()
 
-app = FastAPI()
+    task = asyncio.create_task(periodic_cleanup())
 
+    # Startup terminado
+    yield
+
+    # Shutdown
+    task.cancel()
+
+app = FastAPI(
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
+)
 
 
 # Middleware de sesión
 app.add_middleware(SessionMiddleware, secret_key=LLAVE_SECRETA)
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-CARPETA_IMAGENES = Path("static/productos_img")
+static_dir = resource_path("static")
+templates_dir = resource_path("templates")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+templates = Jinja2Templates(directory=templates_dir)
+CARPETA_IMAGENES = Path(static_dir) / "productos_img"
 CARPETA_IMAGENES.mkdir(parents=True, exist_ok=True)
+CARPETA_PERFIL_IMG = Path(static_dir) / "perfil_img"
+CARPETA_PERFIL_IMG.mkdir(parents=True, exist_ok=True)
+
+
+def redondear_monto(valor: float) -> float:
+    return float(Decimal(str(valor)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
+
+# Registro en memoria de la última actividad de cada usuario (para el apartado "En línea")
+usuarios_actividad: Dict[str, datetime] = {}
+MINUTOS_PARA_CONSIDERAR_DESCONECTADO = 0
+
+
+# ==========================================
+#   PRESENCIA EN TIEMPO REAL (WebSocket)
+# ==========================================
+class ConnectionManager:
+    """
+    Mantiene:
+    - Las conexiones WebSocket activas de cada usuario logueado (una persona
+      puede tener varias pestañas abiertas, por eso es un set por username).
+    - Las conexiones WebSocket de los admins que están viendo el panel
+      "En línea", para poder empujarles la lista actualizada al instante.
+    """
+    def __init__(self):
+        self.conexiones_usuarios: Dict[str, Set[WebSocket]] = {}
+        self.conexiones_admin: Set[WebSocket] = set()
+        self.lock = asyncio.Lock()
+
+    async def conectar_usuario(self, username: str, ws: WebSocket):
+        async with self.lock:
+            self.conexiones_usuarios.setdefault(username, set()).add(ws)
+
+    async def desconectar_usuario(self, username: str, ws: WebSocket):
+        async with self.lock:
+            conexiones = self.conexiones_usuarios.get(username)
+            if conexiones:
+                conexiones.discard(ws)
+                if not conexiones:
+                    del self.conexiones_usuarios[username]
+
+    async def desconectar_usuario_completo(self, username: str):
+        async with self.lock:
+            conexiones = self.conexiones_usuarios.pop(username, set())
+            return list(conexiones)
+
+    async def conectar_admin(self, ws: WebSocket):
+        async with self.lock:
+            self.conexiones_admin.add(ws)
+
+    async def desconectar_admin(self, ws: WebSocket):
+        async with self.lock:
+            self.conexiones_admin.discard(ws)
+
+    def usuarios_conectados(self) -> Set[str]:
+        return set(self.conexiones_usuarios.keys())
+
+    async def notificar_admins(self):
+        """Empuja la lista actualizada a todos los admins conectados al panel."""
+        payload = construir_payload_en_linea()
+        muertos = []
+        for admin_ws in list(self.conexiones_admin):
+            try:
+                await admin_ws.send_json(payload)
+            except Exception:
+                muertos.append(admin_ws)
+        for m in muertos:
+            self.conexiones_admin.discard(m)
+
+
+manager = ConnectionManager()
+
+
+async def marcar_usuario_desconectado(username: str):
+    if not username:
+        return
+
+    conexiones = await manager.desconectar_usuario_completo(username)
+    usuarios_actividad.pop(username, None)
+    await manager.notificar_admins()
+
+    for ws in conexiones:
+        try:
+            await ws.close(code=1000)
+        except Exception:
+            pass
+
+
+def usuarios_actualmente_conectados() -> Set[str]:
+    """
+    Une dos fuentes de verdad:
+    1. Quienes tienen un WebSocket de presencia abierto ahora mismo (instantáneo).
+    2. Quienes tuvieron actividad HTTP reciente pero aún no abrieron el socket
+       (fallback para no perder a nadie mientras se actualiza el frontend).
+    """
+    ahora = datetime.now()
+    limite = timedelta(minutes=MINUTOS_PARA_CONSIDERAR_DESCONECTADO)
+    por_actividad = {
+        username for username, ultima in usuarios_actividad.items()
+        if ahora - ultima < limite
+    }
+    return por_actividad | manager.usuarios_conectados()
+
+
+def construir_payload_en_linea() -> dict:
+    """Arma el JSON que se manda tanto por GET como por WebSocket."""
+    usernames_conectados = usuarios_actualmente_conectados()
+    todos = {u["username"]: u for u in login_db.obtener_usuarios_basico()}
+
+    conectados = []
+    for username in usernames_conectados:
+        u = todos.get(username, {})
+        ultima = usuarios_actividad.get(username)
+        conectados.append({
+            "username": username,
+            "nombre": u.get("nombre") or username,
+            "puesto": u.get("puesto"),
+            "tipo": u.get("tipo"),
+            "foto": u.get("foto"),
+            "en_vivo": username in manager.usuarios_conectados(),
+            "ultima_actividad": ultima.strftime("%H:%M:%S") if ultima else None,
+        })
+
+    conectados.sort(key=lambda x: x["nombre"].lower())
+    return {"conectados": conectados, "total": len(conectados)}
+
+@app.middleware("http")
+async def middleware_actividad(request: Request, call_next):
+    response = await call_next(request)
+    try:
+        username = request.session.get("username")
+        if username:
+            usuarios_actividad[username] = datetime.now()
+    except Exception:
+        pass
+    return response
 
 @app.exception_handler(404)
 async def not_found(request: Request, response: HTMLResponse):
@@ -54,10 +214,75 @@ empleado_db = EmpleadoDB()
 # Almacenamiento de sesiones activas del scanner (en memoria - para producción usa Redis)
 scanner_sessions: Dict[str, dict] = {}
 
+def obtener_foto_usuario(username: str):
+    """Devuelve la ruta de la foto de perfil del usuario, o None si no tiene."""
+    if not username:
+        return None
+    perfil = login_db.obtener_perfil(username)
+    return perfil.get("foto") if perfil else None
+
 @app.get("/", response_class=HTMLResponse)
 async def vista_login(request: Request):
     error = request.query_params.get("error")
     return templates.TemplateResponse("index.html", {"request": request, "error": error})
+
+
+
+# 1. Ruta GET para mostrar la página web de registro
+@app.get("/nuevo_registro", response_class=HTMLResponse)
+async def vista_nuevo_registro(request: Request):
+    error = request.query_params.get("error")
+    success = request.query_params.get("success")
+    return templates.TemplateResponse("nuevo_registro.html", {
+        "request": request, 
+        "error": error,
+        "success": success
+    })
+
+# 2. Ruta POST para procesar el formulario de registro de usuario
+@app.post("/api/registrar_usuario")
+async def registrar_usuario_web(
+    request: Request,
+    nombre: str = Form(...),
+    puesto: str = Form(...),
+    salario: float = Form(...),
+    username: str = Form(...),
+    password: str = Form(...),
+    tipo: str = Form(...)  # Por ejemplo: 'user' o 'admin'
+):
+    # Instanciamos la base de datos de empleados (asegúrate de tener empleado_db inicializado)
+    # empleado_db = EmpleadoDB()
+    
+    nuevo_empleado = Empleado(
+        nombre=nombre,
+        puesto=puesto,
+        salario=salario,
+        username=username,
+        password=password,
+        tipo=tipo
+    )
+    
+    resultado = empleado_db.agregar_usuario(nuevo_empleado)
+    
+    if not resultado:
+        return RedirectResponse(url="/nuevo_registro?error=El%20nombre%20de%20usuario%20ya%20existe", status_code=303)
+    
+    # Opcional: Registrar el evento en la auditoría
+    try:
+        hora_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        auditoria_db.registrar(
+            usuario=username,
+            usuario_id=None,
+            accion="REGISTRO_WEB",
+            tabla="users",
+            registro_id=None,
+            detalles=f"Nuevo usuario registrado vía web: @{username}",
+            fecha_hora=hora_local
+        )
+    except Exception:
+        pass
+
+    return RedirectResponse(url="/nuevo_registro?success=Usuario%20registrado%20exitosamente", status_code=303)
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin(request: Request):
@@ -81,6 +306,7 @@ async def admin(request: Request):
     return templates.TemplateResponse("admin.html", {
         "request": request, 
         "username": username,
+        "foto": obtener_foto_usuario(username),
         "total_hoy": total_hoy,
         "total_historico": ventas_db.obtener_total_ventas(),
         "ultimas_ventas": ultimas_ventas,
@@ -114,6 +340,7 @@ async def admin_ventas(request: Request):
     return templates.TemplateResponse("admin_ventas.html", {
         "request": request, 
         "username": username,
+        "foto": obtener_foto_usuario(username),
         "ventas_con_productos": ventas_con_productos
     })
 
@@ -121,9 +348,12 @@ async def admin_ventas(request: Request):
 async def vista_productos(request: Request):
     # Trae todos los productos con IVA, stock, código de barras e imagen desde SQLite
     lista = db_productos.listar_productos()
+    username = request.session.get("username")
     
     return templates.TemplateResponse("admin_productos.html", {
         "request": request,
+        "username": username,
+        "foto": obtener_foto_usuario(username),
         "productos": lista
     })
 
@@ -184,6 +414,7 @@ async def logout(request: Request):
             detalles=f"Cierre de sesión exitoso. Rol: {rol}.",
             fecha_hora=hora_local
         )
+        await marcar_usuario_desconectado(username)
     request.session.clear()
     return RedirectResponse(url="/", status_code=303)
         
@@ -324,19 +555,40 @@ async def api_editar_producto(
 async def vista_clientes(request: Request):
     # cliente_db debe ser tu instancia de ClienteDB()
     lista_clientes = cliente_db.obtener_todos_los_clientes() 
+    username = request.session.get("username")
     return templates.TemplateResponse("admin_clientes.html", {
         "request": request,
+        "username": username,
+        "foto": obtener_foto_usuario(username),
         "clientes": lista_clientes
     })
 
 @app.post("/admin/clientes/nuevo")
-async def api_agregar_cliente(nombre: str = Form(...)):
-    if nombre.strip() != "":
-        resultado = cliente_db.agregar_cliente(nombre.strip())
-        if not resultado["success"]:
-            raise HTTPException(status_code=400, detail=resultado["error"])
-            
-    return RedirectResponse(url="/admin/clientes", status_code=303)
+async def api_agregar_cliente(
+    nombre: str = Form(...),
+    tipo_identificacion: str = Form("cedula"),
+    identificacion: str = Form(None),
+    direccion: str = Form(None),
+    telefono: str = Form(None),
+    email: str = Form(None)
+):
+    if not nombre or nombre.strip() == "":
+        raise HTTPException(status_code=400, detail="El nombre del cliente es obligatorio")
+    
+    resultado = cliente_db.agregar_cliente(
+        nombre=nombre.strip(),
+        tipo_identificacion=tipo_identificacion,
+        identificacion=identificacion.strip() if identificacion else None,
+        direccion=direccion.strip() if direccion else None,
+        telefono=telefono.strip() if telefono else None,
+        email=email.strip() if email else None
+    )
+    
+    if not resultado["success"]:
+        raise HTTPException(status_code=400, detail=resultado["error"])
+    
+    return {"success": True, "id": resultado.get("id"), "message": "Cliente agregado exitosamente"}
+
 
 @app.post("/admin/clientes/eliminar/{cliente_id}")
 async def api_eliminar_cliente(cliente_id: int):
@@ -357,6 +609,7 @@ async def admin_auditoria(request: Request):
     return templates.TemplateResponse("admin_auditoria.html", {
         "request": request, 
         "username": username,
+        "foto": obtener_foto_usuario(username),
         "logs_auditoria": logs_auditoria
     })
 
@@ -370,6 +623,7 @@ async def admin_usuarios(request: Request):
     return templates.TemplateResponse("admin_usuarios.html", {
         "request": request,
         "username": username,
+        "foto": obtener_foto_usuario(username),
         "usuarios": usuarios
     })
 @app.post("/admin/usuarios/nuevo")
@@ -438,6 +692,29 @@ async def vista_panel_vender(request: Request):
         "usuario": usuario_actual
     })
 
+
+@app.get("/user/sala", response_class=HTMLResponse)
+async def vista_sala_empleado(request: Request):
+    """Sala de Empleados: perfil propio, foto, compañeros en línea y estado del escáner."""
+    ip = obtener_ip_local()
+    port = request.url.port
+    usuario_actual = request.session.get("username")
+    if not usuario_actual:
+        return RedirectResponse(url="/", status_code=303)
+
+    perfil = login_db.obtener_perfil(usuario_actual)
+    if not perfil:
+        raise HTTPException(status_code=404, detail="No se encontró el perfil del usuario.")
+
+    return templates.TemplateResponse("empleado_sala.html", {
+        "request": request,
+        "usuario": usuario_actual,
+        "perfil": perfil,
+        "server_ip":ip,
+        "server_port":port
+    })
+
+
 @app.post("/api/vender")
 async def api_procesar_venta(request: Request, data: DataVenta):
     # 1. Seguridad: Verificar qué usuario (user/empleado) está disparando la venta
@@ -458,14 +735,14 @@ async def api_procesar_venta(request: Request, data: DataVenta):
     total_calculado = 0
     for item in data.detalles:
         # Aquí calculamos el precio final incluyendo el IVA para el total
-        precio_con_iva = item.precio_unitario * (1 + item.iva / 100)
-        total_calculado += item.cantidad * precio_con_iva
+        precio_con_iva = redondear_monto(item.precio_unitario * (1 + item.iva / 100))
+        total_calculado += redondear_monto(item.cantidad * precio_con_iva)
         detalles_venta.append(item.model_dump())
 
     nueva_venta = {
         "cliente_id": data.cliente_id,
         "empleado_id": empleado_id,
-        "total": total_calculado, # Usamos el total calculado con IVA
+        "total": redondear_monto(total_calculado), # Usamos el total calculado con IVA
         "metodo_pago": data.metodo_pago,
         "detalles": detalles_venta
     }
@@ -483,13 +760,57 @@ async def api_procesar_venta(request: Request, data: DataVenta):
         accion="INSERT",
         tabla="ventas",
         registro_id=venta_id,
-        detalles=f"Venta #{venta_id} registrada. Total cobrado con IVA: ${total_calculado:.2f}. Método: {data.metodo_pago}.",
+        detalles=f"Venta #{venta_id} registrada. Total cobrado con IVA: ${redondear_monto(total_calculado):.2f}. Método: {data.metodo_pago}.",
         fecha_hora=hora_local
     )
         
     return {"success": True, "venta_id": venta_id}
 
+# Endpoint para buscar clientes (autocompletado)
+@app.get("/api/clientes/buscar")
+async def buscar_clientes(termino: str):
+    if not termino or len(termino) < 2:
+        return {"clientes": []}
+    resultados = cliente_db.buscar_clientes(termino)
+    return {"clientes": resultados}
 
+# Endpoint para obtener cliente por identificación (para facturación)
+@app.get("/api/clientes/identificacion/{identificacion}")
+async def obtener_cliente_por_identificacion(identificacion: str):
+    cliente = cliente_db.obtener_cliente_por_identificacion(identificacion)
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    return cliente
+
+# Endpoint para crear cliente rápido desde el punto de venta (API)
+@app.post("/api/clientes/rapido")
+async def api_crear_cliente_rapido(request: Request):
+    data = await request.json()
+    nombre = data.get("nombre")
+    tipo_identificacion = data.get("tipo_identificacion", "cedula")
+    identificacion = data.get("identificacion")
+    direccion = data.get("direccion")
+    telefono = data.get("telefono")
+    email = data.get("email")
+    
+    if not nombre:
+        raise HTTPException(status_code=400, detail="El nombre es obligatorio")
+    
+    resultado = cliente_db.agregar_cliente(
+        nombre=nombre.strip(),
+        tipo_identificacion=tipo_identificacion,
+        identificacion=identificacion.strip() if identificacion else None,
+        direccion=direccion.strip() if direccion else None,
+        telefono=telefono.strip() if telefono else None,
+        email=email.strip() if email else None
+    )
+    
+    if not resultado["success"]:
+        raise HTTPException(status_code=400, detail=resultado["error"])
+    
+    # Obtener el cliente creado
+    cliente = cliente_db.obtener_cliente_por_id(resultado["id"])
+    return {"success": True, "cliente": cliente}
 
 
 @app.post("/api/scanner_login")
@@ -687,6 +1008,219 @@ async def vista_scanner(request: Request):
     return templates.TemplateResponse("scanner.html", {"request": request})
 
 
+@app.get("/admin/estadistica", response_class=HTMLResponse)
+async def vista_estadisticas(request: Request):
+    username = request.session.get("username")
+    rol = request.session.get("rol")
+    
+    if not username or rol != "admin":
+        return RedirectResponse(url="/?error=Acceso%20denegado", status_code=303)
+    
+    # 1. Ventas por día (últimos 30 días)
+    ventas_por_dia = ventas_db.obtener_ventas_totales_por_dia()
+    ventas_por_dia = ventas_por_dia[:30]
+    
+    # 2. Métodos de pago
+    metodos_pago = ventas_db.obtener_metodos_pago()
+    
+    # 3. Top 5 productos más vendidos
+    top_productos = ventas_db.obtener_top_productos(limite=5)
+    
+    # 4. Top 5 clientes
+    top_clientes = ventas_db.obtener_top_clientes(limite=5)
+    
+    # 5. Rendimiento por empleado
+    empleados_ventas = ventas_db.obtener_rendimiento_empleados()
+    
+    # 6. Métricas del período (últimos 30 días)
+    total_periodo = ventas_db.obtener_total_ventas_periodo(dias=30)
+    total_ventas_periodo = ventas_db.obtener_cantidad_ventas_periodo(dias=30)
+    ticket_promedio = ventas_db.obtener_ticket_promedio_periodo(dias=30)
+    productos_vendidos = ventas_db.obtener_productos_vendidos_periodo(dias=30)
+    
+    return templates.TemplateResponse("admin_estadistica.html", {
+        "request": request,
+        "username": username,
+        "foto": obtener_foto_usuario(username),
+        "ventas_por_dia": ventas_por_dia,
+        "metodos_pago": metodos_pago,
+        "top_productos": top_productos,
+        "top_clientes": top_clientes,
+        "empleados_ventas": empleados_ventas,
+        "total_periodo": total_periodo,
+        "total_ventas_periodo": total_ventas_periodo,
+        "ticket_promedio": ticket_promedio,
+        "productos_vendidos": productos_vendidos
+    })
+
+@app.get("/admin/en_linea", response_class=HTMLResponse)
+async def vista_usuarios_en_linea(request: Request):
+    username = request.session.get("username")
+    rol = request.session.get("rol")
+    if not username or rol != "admin":
+        return RedirectResponse(url="/?error=Acceso%20denegado", status_code=303)
+
+    return templates.TemplateResponse("admin_en_linea.html", {
+        "request": request,
+        "username": username,
+        "foto": obtener_foto_usuario(username)
+    })
+
+
+# ==========================================
+#   APARTADO "EN LÍNEA"
+# ==========================================
+@app.get("/api/usuarios/en_linea")
+async def usuarios_en_linea(request: Request):
+    """
+    Se mantiene como fallback (ej. para la carga inicial de la página antes
+    de que el WebSocket termine de conectar). La fuente de verdad en tiempo
+    real es el WebSocket /ws/en_linea.
+    """
+    username_actual = request.session.get("username")
+    if not username_actual:
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    return construir_payload_en_linea()
+
+
+@app.websocket("/ws/presencia")
+async def ws_presencia(websocket: WebSocket):
+    """
+    Cada usuario logueado abre este socket mientras tiene la app abierta.
+    Mientras el socket siga vivo, el usuario cuenta como "en línea" al
+    instante; cuando se cierra (cierre de pestaña, refresh, pérdida de red),
+    se marca como desconectado de inmediato y se avisa a los admins.
+    """
+    username = websocket.session.get("username")
+    if not username:
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+    await manager.conectar_usuario(username, websocket)
+    usuarios_actividad[username] = datetime.now()
+    await manager.notificar_admins()
+
+    try:
+        while True:
+            # El cliente debe mandar un ping periódico (ej. cada 20-30s) para
+            # mantener la conexión viva y refrescar la última actividad.
+            await websocket.receive_text()
+            usuarios_actividad[username] = datetime.now()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await manager.desconectar_usuario(username, websocket)
+        await manager.notificar_admins()
+
+
+@app.websocket("/ws/en_linea")
+async def ws_en_linea(websocket: WebSocket):
+    """Socket que consumen tanto el panel de admin como la sala de empleados
+    para recibir la lista de usuarios en línea actualizada en tiempo real,
+    sin hacer polling. Cualquier usuario logueado puede escuchar."""
+    username = websocket.session.get("username")
+    if not username:
+        await websocket.close(code=4401)
+        return
+
+    await websocket.accept()
+    await manager.conectar_admin(websocket)
+    # Estado inicial al conectarse
+    await websocket.send_json(construir_payload_en_linea())
+
+    try:
+        while True:
+            # No esperamos nada del admin, solo detectamos la desconexión.
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await manager.desconectar_admin(websocket)
+
+
+# ==========================================
+#   APARTADO "PERFIL"
+# ==========================================
+@app.get("/api/perfil")
+async def obtener_mi_perfil(request: Request):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    perfil = login_db.obtener_perfil(username)
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return perfil
+
+@app.post("/api/perfil/editar")
+async def editar_mi_perfil(
+    request: Request,
+    nombre: str = Form(...),
+    puesto: str = Form(None)
+):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    login_db.actualizar_datos_basicos(username, nombre=nombre.strip(), puesto=(puesto.strip() if puesto else None))
+
+    usuario_id = login_db.obtener_id_usuario(username)
+    hora_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    auditoria_db.registrar(
+        usuario=username,
+        usuario_id=usuario_id,
+        accion="UPDATE",
+        tabla="users",
+        registro_id=usuario_id,
+        detalles="El usuario actualizó los datos de su perfil.",
+        fecha_hora=hora_local
+    )
+
+    return {"success": True}
+
+@app.post("/api/perfil/foto")
+async def subir_foto_perfil(request: Request, imagen_archivo: UploadFile = File(...)):
+    username = request.session.get("username")
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+
+    if not imagen_archivo or not imagen_archivo.filename:
+        raise HTTPException(status_code=400, detail="No se proporcionó ninguna imagen")
+
+    extension = Path(imagen_archivo.filename).suffix.lower()
+    if extension not in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+        raise HTTPException(status_code=400, detail="Formato de imagen no permitido")
+
+    try:
+        nombre_archivo = f"{username}{extension}"
+        ruta_guardado = CARPETA_PERFIL_IMG / nombre_archivo
+        contenido = await imagen_archivo.read()
+        with open(ruta_guardado, "wb") as f:
+            f.write(contenido)
+        ruta_final = f"/static/perfil_img/{nombre_archivo}"
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error al guardar la imagen: {str(e)}")
+
+    login_db.actualizar_foto(username, ruta_final)
+
+    usuario_id = login_db.obtener_id_usuario(username)
+    hora_local = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    auditoria_db.registrar(
+        usuario=username,
+        usuario_id=usuario_id,
+        accion="UPDATE",
+        tabla="users",
+        registro_id=usuario_id,
+        detalles="El usuario actualizó su foto de perfil.",
+        fecha_hora=hora_local
+    )
+
+    return {"success": True, "foto": ruta_final}
+
+
+
+
 # Limpiar sesiones antiguas cada hora
 def limpiar_sesiones_antiguas():
     now = datetime.now()
@@ -697,13 +1231,3 @@ def limpiar_sesiones_antiguas():
     
     for session_id in expired_sessions:
         del scanner_sessions[session_id]
-
-@app.on_event("startup")
-async def startup_event():
-    import asyncio
-    async def periodic_cleanup():
-        while True:
-            await asyncio.sleep(3600)  # Cada hora
-            limpiar_sesiones_antiguas()
-    
-    asyncio.create_task(periodic_cleanup())

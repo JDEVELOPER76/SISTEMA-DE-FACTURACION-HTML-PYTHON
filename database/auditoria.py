@@ -2,9 +2,10 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime
 
-RAIZ = Path(__file__).resolve().parent
-CARPETA_DATOS = RAIZ / "datos"
-CARPETA_DATOS.mkdir(exist_ok=True)
+RAIZ = Path(__file__).resolve().parent.parent
+CARPETA_BASE = RAIZ / "datos_facturacion"
+CARPETA_DATOS = CARPETA_BASE / "datos"
+CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
 
 class AuditoriaDB:
     def __init__(self, db_name="facturacion.db"):

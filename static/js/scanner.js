@@ -185,7 +185,7 @@ async function enviarAlLocalhost(codigo, esDesdeArchivo = false) {
         
         if (response.ok) {
             document.getElementById('result-text').innerHTML = `
-                <span style="color: var(--hadrox-navy);">📤 Código transmitido: </span>
+                <span style="color: var(--hadrox-navy);">Código transmitido: </span>
                 <strong style="color: var(--hadrox-blue);">${codigo}</strong>
             `;
             statusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Transmitiendo...`;
@@ -203,7 +203,7 @@ async function enviarAlLocalhost(codigo, esDesdeArchivo = false) {
         } else {
             const error = await response.json();
             document.getElementById('result-text').innerHTML = `
-                <span style="color: var(--hadrox-red);">❌ Error: </span>
+                <span style="color: var(--hadrox-red);">Error: </span>
                 <span>${error.detail || 'Error en la transmisión'}</span>
             `;
             statusBadge.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i> Error de transmisión`;
@@ -285,7 +285,7 @@ document.getElementById('fotoInput')?.addEventListener('change', async (e) => {
                 const decodedText = await Html5Qrcode.scanImageFile(imageUrl);
                 
                 document.getElementById('result-text').innerHTML = `
-                    <span style="color: var(--hadrox-navy);">📌 Código detectado: </span>
+                    <span style="color: var(--hadrox-navy);">Código detectado: </span>
                     <strong style="color: var(--hadrox-blue); font-size: 16px;">${decodedText}</strong>
                     <i class="fa-solid fa-spinner fa-spin"></i>
                 `;
@@ -295,7 +295,7 @@ document.getElementById('fotoInput')?.addEventListener('change', async (e) => {
                 
             } catch (error) {
                 document.getElementById('result-text').innerHTML = `
-                    <span style="color: var(--hadrox-red);">❌ No se detectó código en la imagen</span>
+                    <span style="color: var(--hadrox-red);">No se detectó código en la imagen</span>
                 `;
                 lockEscaneo = false;
             }

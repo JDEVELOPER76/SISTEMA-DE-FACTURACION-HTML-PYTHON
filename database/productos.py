@@ -3,9 +3,10 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
-RAIZ = Path(__file__).resolve().parent
-CARPETA_DATOS = RAIZ / "datos"
-CARPETA_DATOS.mkdir(exist_ok=True)
+RAIZ = Path(__file__).resolve().parent.parent
+CARPETA_BASE = RAIZ / "datos_facturacion"
+CARPETA_DATOS = CARPETA_BASE / "datos"
+CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
 
 # 1. Modelo Pydantic actualizado con tus nuevos requerimientos
 class Producto(BaseModel):

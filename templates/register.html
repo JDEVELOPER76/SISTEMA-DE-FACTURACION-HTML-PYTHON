@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySYS Login</title>
+    <title>Registro de Nuevo Usuario</title>
     <style>
-        /* --- Variables y Reset (Mismo sistema de diseño que nuevo_registro.html) --- */
+        /* --- Variables y Reset --- */
         :root {
             --primary: #4f46e5;
             --primary-hover: #4338ca;
@@ -27,8 +27,6 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-body);
-            /* Fondo con un sutil gradiente para diferenciar del registro */
-            background-image: linear-gradient(135deg, #f3f4f6 0%, #e0e7ff 100%);
             color: var(--text-main);
             display: flex;
             justify-content: center;
@@ -39,10 +37,10 @@
         }
 
         /* --- Contenedor Principal (Tarjeta) --- */
-        .login-card {
+        .register-card {
             background: var(--bg-card);
             width: 100%;
-            max-width: 420px;
+            max-width: 550px;
             border-radius: 16px;
             box-shadow: var(--shadow);
             padding: 2.5rem;
@@ -54,49 +52,21 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- Encabezado con Logo --- */
         .card-header {
             text-align: center;
             margin-bottom: 2rem;
         }
 
-        .logo-container {
-            width: 90px;
-            height: 90px;
-            margin: 0 auto 1rem;
-            background: linear-gradient(135deg, var(--primary), #818cf8);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
-            overflow: hidden;
-        }
-
-        .logo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
         .card-header h1 {
-            font-size: 1.5rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--text-main);
-            margin-bottom: 0.25rem;
-        }
-
-        .card-header .subtitle {
-            color: var(--primary);
-            font-size: 0.95rem;
-            font-weight: 600;
             margin-bottom: 0.5rem;
         }
 
         .card-header p {
             color: var(--text-muted);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
         /* --- Alertas (Mensajes de Jinja2) --- */
@@ -125,6 +95,12 @@
         }
 
         /* --- Formulario --- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
         .form-group {
             margin-bottom: 1.25rem;
             display: flex;
@@ -138,7 +114,8 @@
             margin-bottom: 0.5rem;
         }
 
-        .form-group input {
+        .form-group input,
+        .form-group select {
             padding: 0.75rem 1rem;
             border: 1.5px solid var(--border);
             border-radius: 8px;
@@ -150,9 +127,14 @@
             width: 100%;
         }
 
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             border-color: var(--border-focus);
             box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+        }
+
+        .form-group input::placeholder {
+            color: #9ca3af;
         }
 
         /* --- Campo de Contraseña con Toggle --- */
@@ -195,7 +177,6 @@
             cursor: pointer;
             transition: background-color 0.2s ease, transform 0.1s ease;
             margin-top: 0.5rem;
-            letter-spacing: 0.3px;
         }
 
         .btn-submit:hover {
@@ -206,52 +187,24 @@
             transform: scale(0.98);
         }
 
-        /* --- Enlace de Registro (Rediseñado) --- */
-        .register-link {
-            text-align: center;
-            margin-top: 1.75rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #e5e7eb;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .register-link a {
-            color: var(--primary);
-            font-weight: 600;
-            text-decoration: none;
-            margin-left: 0.25rem;
-            transition: color 0.2s ease;
-        }
-
-        .register-link a:hover {
-            color: var(--primary-hover);
-            text-decoration: underline;
-        }
-
         /* --- Responsivo --- */
-        @media (max-width: 480px) {
-            .login-card {
-                padding: 1.75rem;
+        @media (max-width: 600px) {
+            .register-card {
+                padding: 1.5rem;
             }
-            .logo-container {
-                width: 75px;
-                height: 75px;
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 0;
             }
         }
     </style>
 </head>
 <body>
 
-    <main class="login-card">
+    <main class="register-card">
         <div class="card-header">
-            <!-- Logo del sistema -->
-            <div class="logo-container">
-                <img src="./static/logo/fondo.png" alt="Logo MySYS">
-            </div>
-            <h1>Bienvenido</h1>
-            <div class="subtitle">Acceso a MySYS</div>
-            <p>Ingresa tus credenciales para continuar</p>
+            <h1>Registro de Usuario</h1>
+            <p>Por favor, complete los siguientes campos para crear una nueva cuenta.</p>
         </div>
 
         <!-- Mensajes de Feedback (Jinja2) -->
@@ -267,29 +220,35 @@
             </div>
         {% endif %}
 
-        <!-- Formulario de Login -->
-        <!-- Ajusta el 'action' a la ruta real de tu backend -->
-        <form action="/login" method="POST" autocomplete="off">
-            
+        <!-- Formulario -->
+        <!-- Ajusta el 'action' a la ruta de tu backend -->
+        <form action="/registro" method="POST" autocomplete="off">
             <div class="form-group">
-                <label for="username">Usuario</label>
-                <input type="text" id="username" name="username" placeholder="Ingresa tu usuario" required>
+                <label for="username">Nombre de Usuario</label>
+                <input type="text" id="username" name="username" placeholder="Ej. juan.perez" required>
             </div>
 
             <div class="form-group">
                 <label for="password">Contraseña</label>
                 <div class="password-wrapper">
-                    <input type="password" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+                    <input type="password" id="password" name="password" placeholder="Mínimo 8 caracteres" required minlength="8">
                     <button type="button" class="toggle-password" onclick="togglePass()">Mostrar</button>
                 </div>
             </div>
 
-            <button type="submit" class="btn-submit">Entrar</button>
+            <div class="form-group">
+                <label for="rol">Tipo de Rol</label>
+                <select id="rol" name="rol" required>
+                    <option value="administrador">Administrador</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit">Registrar Usuario</button>
         </form>
     </main>
 
     <script>
-        // Toggle para mostrar/ocultar contraseña
+        // Pequeño script para mostrar/ocultar contraseña
         function togglePass() {
             const passInput = document.getElementById('password');
             const toggleBtn = document.querySelector('.toggle-password');

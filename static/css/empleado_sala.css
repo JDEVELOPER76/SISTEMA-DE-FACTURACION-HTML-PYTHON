@@ -1,0 +1,421 @@
+.sala-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+    width: 100%;
+}
+
+/* ---------- Tarjeta de perfil ---------- */
+.perfil-card {
+    background: var(--hadrox-white);
+    border: 1px solid var(--hadrox-border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.perfil-cover {
+    height: 90px;
+    background: linear-gradient(120deg, var(--hadrox-navy), var(--hadrox-blue));
+}
+
+.perfil-main {
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 0 28px 24px;
+    margin-top: -44px;
+    flex-wrap: wrap;
+}
+
+.avatar-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 4px solid var(--hadrox-white);
+    background: var(--hadrox-bg);
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.avatar img, .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hadrox-light);
+    font-size: 34px;
+}
+
+.avatar-edit-btn {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--hadrox-blue);
+    color: var(--hadrox-white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    cursor: pointer;
+    border: 2px solid var(--hadrox-white);
+    transition: background 0.15s ease;
+}
+
+.avatar-edit-btn:hover {
+    background: var(--hadrox-blue-dark);
+}
+
+.perfil-info {
+    flex: 1;
+    min-width: 200px;
+    padding-top: 48px;
+}
+
+.perfil-nombre-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.perfil-nombre-row h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--hadrox-navy);
+    margin: 0;
+}
+
+.rol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--hadrox-blue);
+    background: rgba(37, 99, 235, 0.08);
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.perfil-puesto {
+    margin: 4px 0 2px;
+    color: var(--hadrox-light);
+    font-size: 13.5px;
+    font-weight: 500;
+}
+
+.perfil-username {
+    margin: 0;
+    color: var(--hadrox-light);
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-editar-perfil {
+    align-self: flex-start;
+    margin-top: 48px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--hadrox-border);
+    background: var(--hadrox-white);
+    color: var(--hadrox-navy);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-editar-perfil:hover {
+    border-color: var(--hadrox-blue);
+    color: var(--hadrox-blue);
+}
+
+/* ---------- Formulario de edición ---------- */
+.perfil-edit-form {
+    display: none;
+    border-top: 1px solid var(--hadrox-border);
+    padding: 20px 28px 24px;
+    background: var(--hadrox-bg);
+}
+
+.perfil-edit-form.visible {
+    display: block;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hadrox-light);
+    margin-bottom: 6px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--hadrox-border);
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--hadrox-navy);
+    background: var(--hadrox-white);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--hadrox-blue);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.btn-cancelar, .btn-guardar {
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-cancelar {
+    background: var(--hadrox-white);
+    border: 1px solid var(--hadrox-border);
+    color: var(--hadrox-light);
+}
+
+.btn-guardar {
+    background: var(--hadrox-blue);
+    color: var(--hadrox-white);
+}
+
+.btn-guardar:hover {
+    background: var(--hadrox-blue-dark);
+}
+
+@media (max-width: 620px) {
+    .form-row { grid-template-columns: 1fr; }
+}
+
+/* ---------- Grid de paneles ---------- */
+.sala-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 760px) {
+    .sala-grid { grid-template-columns: 1fr; }
+}
+
+.panel-card {
+    background: var(--hadrox-white);
+    border: 1px solid var(--hadrox-border);
+    border-radius: 14px;
+    padding: 20px 22px;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.panel-header i {
+    color: var(--hadrox-blue);
+    font-size: 15px;
+}
+
+.panel-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--hadrox-navy);
+    margin: 0;
+    flex: 1;
+}
+
+.contador-badge {
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--hadrox-green);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 20px;
+}
+
+/* ---------- Estado del escáner ---------- */
+.escaner-estado {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.escaner-icono {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--hadrox-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hadrox-light);
+    font-size: 17px;
+    flex-shrink: 0;
+}
+
+.escaner-estado.conectado .escaner-icono {
+    background: rgba(22, 163, 74, 0.1);
+    color: var(--hadrox-green);
+}
+
+.escaner-titulo {
+    margin: 0 0 4px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--hadrox-navy);
+}
+
+.escaner-sub {
+    margin: 0;
+    font-size: 12px;
+    color: var(--hadrox-light);
+    line-height: 1.5;
+}
+
+/* ---------- Compañeros en línea ---------- */
+.lista-compañeros {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.compañero-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 6px;
+    border-radius: 8px;
+}
+
+.compañero-item:hover {
+    background: var(--hadrox-bg);
+}
+
+.compañero-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--hadrox-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hadrox-light);
+    font-size: 14px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.compañero-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.compañero-avatar .online-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--hadrox-green);
+    border: 2px solid var(--hadrox-white);
+}
+
+.compañero-nombre {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hadrox-navy);
+    margin: 0;
+}
+
+.compañero-puesto {
+    font-size: 11.5px;
+    color: var(--hadrox-light);
+    margin: 0;
+}
+
+.compañero-hora {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--hadrox-light);
+    font-weight: 500;
+}
+
+.vacio-msg {
+    text-align: center;
+    color: var(--hadrox-light);
+    font-size: 12.5px;
+    padding: 20px 0;
+}
+
+/* ---------- Toast ---------- */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--hadrox-navy);
+    color: var(--hadrox-white);
+    padding: 11px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 999;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.toast.error {
+    background: var(--hadrox-red);
+}

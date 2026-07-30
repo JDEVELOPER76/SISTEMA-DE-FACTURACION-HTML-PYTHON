@@ -1,0 +1,160 @@
+/* ==========================================================
+   HADROX · Estilos compartidos del área de empleados
+   Usado por: empleado_vender.html · scanner.html · empleado_sala.html
+   ========================================================== */
+
+:root {
+    --hadrox-blue: #2563eb;
+    --hadrox-blue-dark: #1d4ed8;
+    --hadrox-navy: #0f172a;
+    --hadrox-red: #dc2626;
+    --hadrox-green: #16a34a;
+    --hadrox-light: #64748b;
+    --hadrox-border: #e2e8f0;
+    --hadrox-bg: #f8fafc;
+    --hadrox-white: #ffffff;
+    --hadrox-fondo: #f3f3f5;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ---------- Barra superior ---------- */
+.top-navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 12px 24px;
+    background: var(--hadrox-white);
+    border-bottom: 1px solid var(--hadrox-border);
+}
+
+.top-navbar .brand {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    color: var(--hadrox-green);
+    white-space: nowrap;
+}
+
+.top-navbar .brand-accent {
+    color: var(--hadrox-blue);
+}
+
+/* ---------- Navegación entre módulos ---------- */
+.employee-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--hadrox-bg);
+    border: 1px solid var(--hadrox-border);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.employee-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hadrox-light);
+    text-decoration: none;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.employee-nav .nav-link i {
+    font-size: 12px;
+}
+
+.employee-nav .nav-link:hover {
+    color: var(--hadrox-navy);
+    background: rgba(15, 23, 42, 0.04);
+}
+
+.employee-nav .nav-link.active {
+    color: var(--hadrox-white);
+    background: var(--hadrox-blue);
+}
+
+/* ---------- Zona derecha (estado + sesión) ---------- */
+.navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.navbar-right a,
+.btn-logout {
+    color: var(--hadrox-light);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.navbar-right a:hover,
+.btn-logout:hover {
+    color: var(--hadrox-red);
+    background-color: rgba(220, 38, 38, 0.08); /* Fondo suave rojo al pasar el mouse */
+    transform: translateY(-1px);
+}
+
+.navbar-right a:hover i,
+.btn-logout:hover i {
+    transform: translateX(2px); /* Desplazamiento sutil del icono de la puerta */
+    transition: transform 0.2s ease;
+}
+
+.scanner-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--hadrox-light);
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: var(--hadrox-bg);
+    border: 1px solid var(--hadrox-border);
+}
+
+.scanner-status.connected {
+    color: var(--hadrox-green);
+    background: rgba(22, 163, 74, 0.08);
+    border-color: rgba(22, 163, 74, 0.25);
+}
+
+.scanner-status .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--hadrox-light);
+}
+
+.scanner-status.connected .status-dot {
+    background: var(--hadrox-green);
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+}
+
+@media (max-width: 760px) {
+    .top-navbar {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .employee-nav .nav-link span.nav-label {
+        display: none;
+    }
+}

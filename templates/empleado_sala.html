@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySYS | Sala de Empleados</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/hadrox-shared.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/empleado_sala.css') }}">
+</head>
+<body>
+
+    <div style="display: flex; flex-direction: column; width: 100%; min-height: 100vh; background: var(--hadrox-bg);">
+        <div class="top-navbar">
+            <span class="brand">My<span class="brand-accent">SYS</span></span>
+
+            <nav class="employee-nav">
+                <a href="/user/vender" class="nav-link">
+                    <i class="fa-solid fa-cash-register"></i><span class="nav-label">Ventas</span>
+                </a>
+                <a href="/code" class="nav-link">
+                    <i class="fa-solid fa-barcode"></i><span class="nav-label">Escáner</span>
+                </a>
+                <a href="/user/sala" class="nav-link active">
+                    <i class="fa-solid fa-id-badge"></i><span class="nav-label">Mi Perfil</span>
+                </a>
+            </nav>
+
+            <div class="navbar-right">
+                <div id="scannerStatus" class="scanner-status">
+                    <span class="status-dot"></span>
+                    <span id="scannerStatusText">Verificando escáner...</span>
+                </div>
+                <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+            </div>
+        </div>
+
+        <div class="sala-container">
+
+            <!-- Tarjeta de perfil -->
+            <section class="perfil-card">
+                <div class="perfil-cover"></div>
+
+                <div class="perfil-main">
+                    <div class="avatar-wrapper">
+                        <div class="avatar" id="avatarPreview">
+                            {% if perfil.foto %}
+                                <img src="{{ perfil.foto }}" alt="Foto de perfil" id="avatarImg">
+                            {% else %}
+                                <div class="avatar-placeholder" id="avatarImg">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <label for="fotoInput" class="avatar-edit-btn" title="Cambiar foto">
+                            <i class="fa-solid fa-camera"></i>
+                        </label>
+                        <input type="file" id="fotoInput" accept="image/png, image/jpeg, image/webp, image/gif" hidden>
+                    </div>
+
+                    <div class="perfil-info">
+                        <div class="perfil-nombre-row">
+                            <h1 id="perfilNombre">{{ perfil.nombre or usuario }}</h1>
+                            <span class="rol-badge">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                {{ 'Administrador' if perfil.tipo == 'admin' else 'Operario' }}
+                            </span>
+                        </div>
+                        <p class="perfil-puesto" id="perfilPuesto">{{ perfil.puesto or 'Sin puesto asignado' }}</p>
+                        <p class="perfil-username"><i class="fa-solid fa-at"></i>{{ perfil.username or usuario }}</p>
+                    </div>
+
+                    <button class="btn-editar-perfil" id="btnEditarPerfil">
+                        <i class="fa-solid fa-pen"></i> Editar Perfil
+                    </button>
+                </div>
+
+                <!-- Formulario de edición (oculto por defecto) -->
+                <form class="perfil-edit-form" id="perfilEditForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre completo</label>
+                            <input type="text" id="inputNombre" value="{{ perfil.nombre or '' }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Puesto</label>
+                            <input type="text" id="inputPuesto" value="{{ perfil.puesto or '' }}" placeholder="Ej. Cajero, Vendedor...">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancelar" id="btnCancelarEdicion">Cancelar</button>
+                        <button type="submit" class="btn-guardar">
+                            <i class="fa-solid fa-check"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <div class="sala-grid">
+
+                <!-- Estado del escáner -->
+                <section class="panel-card">
+                    <div class="panel-header">
+                        <i class="fa-solid fa-barcode"></i>
+                        <h3>Estado del Escáner</h3>
+                    </div>
+                    <div class="escaner-estado" id="escanerEstadoBox">
+                        <div class="escaner-icono">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
+                        </div>
+                        <div>
+                            <p class="escaner-titulo" id="escanerTitulo">Verificando conexión...</p>
+                            <p class="escaner-sub">El escáner debe iniciar sesión con tu mismo usuario en <strong>/code</strong></p>
+                            <p class="escaner-sub">Si el escáner no se conecta, revisa tu red y asegúrate de que ambos dispositivos estén en la misma red local.</p>
+                            <p class="escaner-sub">Usa la IP y el puerto del servidor para configurar el escáner en la aplicación.</p>
+                            <p class="escaner-titulo">IP: {{ server_ip }}</p>
+                            <p class="escaner-titulo">Puerto: {{ server_port }}</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Compañeros en línea -->
+                <section class="panel-card">
+                    <div class="panel-header">
+                        <i class="fa-solid fa-users"></i>
+                        <h3>Compañeros en Línea</h3>
+                        <span class="contador-badge" id="contadorEnLinea">0</span>
+                    </div>
+                    <div class="lista-compañeros" id="listaCompañeros">
+                        <p class="vacio-msg">Buscando empleados conectados...</p>
+                    </div>
+                </section>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', path='js/empleado_sala.js') }}"></script>
+    <script src="{{ url_for('static', path='js/presencia.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,435 @@
+<!-- ============================================================
+     PARTIAL COMPARTIDO: menú de usuario + apartados "En línea" y "Perfil"
+     Se incluye igual en todas las páginas admin_*.html para mantener
+     el mismo topbar, el mismo comportamiento y evitar código duplicado.
+     ============================================================ -->
+<style>
+    /* --- Menú de usuario en el topbar --- */
+    .pm-user-menu { position: relative; }
+
+    .pm-user-trigger {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: inherit;
+        padding: 0.3rem 0.5rem;
+        border-radius: 10px;
+        transition: background 0.15s ease;
+    }
+    .pm-user-trigger:hover { background: var(--bg-body); }
+
+    .pm-avatar-wrap { position: relative; width: 36px; height: 36px; flex-shrink: 0; }
+    .pm-avatar-wrap img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        display: block;
+    }
+    .pm-user-trigger .avatar { margin: 0; }
+
+    .pm-user-name { font-weight: 600; color: var(--text-main); font-size: 0.9rem; }
+    .pm-chevron { font-size: 0.7rem; color: var(--text-muted); transition: transform 0.15s ease; }
+    .pm-user-menu.open .pm-chevron { transform: rotate(180deg); }
+
+    .pm-dropdown {
+        display: none;
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        right: 0;
+        min-width: 210px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: var(--shadow-lg);
+        padding: 0.5rem;
+        z-index: 500;
+    }
+    .pm-user-menu.open .pm-dropdown { display: block; }
+
+    .pm-dropdown a {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 8px;
+        color: var(--text-main);
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 500;
+    }
+    .pm-dropdown a:hover { background: var(--bg-body); }
+    .pm-dropdown a i { width: 16px; text-align: center; color: var(--text-muted); }
+    .pm-dropdown .pm-divider { height: 1px; background: var(--border); margin: 0.4rem 0.2rem; }
+    .pm-dropdown a.pm-logout { color: var(--danger); }
+    .pm-dropdown a.pm-logout i { color: var(--danger); }
+
+    /* --- Overlay y modal genérico (propio, no depende del CSS de cada página) --- */
+    .pm-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .pm-overlay.open { display: flex; }
+
+    .pm-modal {
+        background: var(--bg-card);
+        border-radius: 12px;
+        box-shadow: var(--shadow-lg);
+        width: 100%;
+        max-width: 480px;
+        max-height: 86vh;
+        overflow-y: auto;
+        margin: 1rem;
+    }
+    .pm-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.15rem 1.4rem;
+        background: var(--bg-sidebar);
+        color: white;
+        border-radius: 12px 12px 0 0;
+    }
+    .pm-modal-header h3 { font-size: 1.02rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+    .pm-modal-close { background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; line-height: 1; }
+    .pm-modal-body { padding: 1.4rem; }
+
+    /* --- Widget embebido "En línea" (aparece dentro del contenido de cada página) --- */
+    .pm-online-card .card-header { border-bottom: 1px solid var(--border); }
+    .pm-online-live {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--success-text);
+        background: var(--success-bg);
+        padding: 0.3rem 0.7rem;
+        border-radius: 20px;
+    }
+    .pm-online-live .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--success);
+        display: inline-block;
+        animation: pmPulso 1.6s infinite;
+    }
+    @keyframes pmPulso {
+        0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55); }
+        70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .pm-online-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 0.6rem;
+    }
+
+    /* --- Apartado "En línea" --- */
+    .pm-online-item {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        padding: 0.7rem 0.8rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-bottom: 0.6rem;
+    }
+    .pm-online-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .pm-online-info { flex: 1; min-width: 0; }
+    .pm-online-info strong { display: block; font-size: 0.92rem; color: var(--text-main); }
+    .pm-online-info span { font-size: 0.78rem; color: var(--text-muted); }
+    .pm-online-status {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--success-text);
+        white-space: nowrap;
+    }
+    .pm-online-status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+    .pm-online-grid .pm-online-item { margin-bottom: 0; }
+    .pm-empty { text-align: center; color: var(--text-muted); padding: 1.5rem 0.5rem; font-weight: 500; font-size: 0.9rem; }
+
+    /* --- Apartado "Perfil" --- */
+    .pm-perfil-foto-row { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem; }
+    .pm-perfil-foto-preview {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+    .pm-perfil-upload {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
+        background: var(--bg-body);
+        border: 1px dashed var(--border);
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+    .pm-perfil-upload input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .pm-form-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1rem; }
+    .pm-form-group label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .pm-form-group input {
+        padding: 0.65rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-family: inherit;
+        color: var(--text-main);
+        background: var(--bg-card);
+    }
+    .pm-form-group input:disabled { background: var(--bg-body); color: var(--text-muted); }
+    .pm-form-group input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+    .pm-form-footer { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem; }
+    .pm-btn {
+        padding: 0.65rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    .pm-btn-primary { background-color: var(--primary); color: white; }
+    .pm-btn-primary:hover { background-color: var(--primary-hover); }
+    .pm-btn-secondary { background-color: #e5e7eb; color: var(--text-main); }
+    .pm-btn-secondary:hover { background-color: #d1d5db; }
+    .pm-msg { font-size: 0.82rem; margin-top: 0.75rem; font-weight: 500; }
+    .pm-msg.ok { color: var(--success-text); }
+    .pm-msg.err { color: var(--danger-text); }
+
+    @media (max-width: 480px) {
+        .pm-user-name { display: none; }
+    }
+</style>
+
+<!-- Modal: Perfil -->
+<div class="pm-overlay" id="pmOverlayPerfil">
+    <div class="pm-modal">
+        <div class="pm-modal-header">
+            <h3><i class="fa-solid fa-user-gear"></i> Mi perfil</h3>
+            <button class="pm-modal-close" onclick="pmCerrarModal('pmOverlayPerfil')">&times;</button>
+        </div>
+        <div class="pm-modal-body">
+            <div class="pm-perfil-foto-row">
+                <div id="pmPerfilFotoPreview" class="pm-perfil-foto-preview">A</div>
+                <div>
+                    <label class="pm-perfil-upload">
+                        <i class="fa-solid fa-camera"></i> Cambiar foto
+                        <input type="file" id="pmInputFoto" accept="image/png,image/jpeg,image/gif,image/webp">
+                    </label>
+                    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem;">JPG, PNG, GIF o WEBP</p>
+                </div>
+            </div>
+
+            <form id="pmFormPerfil" onsubmit="return pmGuardarPerfil(event)">
+                <div class="pm-form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="pmPerfilUsername" disabled>
+                </div>
+                <div class="pm-form-group">
+                    <label>Nombre</label>
+                    <input type="text" id="pmPerfilNombre" name="nombre" required>
+                </div>
+                <div class="pm-form-group">
+                    <label>Puesto</label>
+                    <input type="text" id="pmPerfilPuesto" name="puesto">
+                </div>
+                <div id="pmPerfilMsg"></div>
+                <div class="pm-form-footer">
+                    <button type="button" class="pm-btn pm-btn-secondary" onclick="pmCerrarModal('pmOverlayPerfil')">Cancelar</button>
+                    <button type="submit" class="pm-btn pm-btn-primary"><i class="fa-solid fa-floppy-disk"></i> Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Menú desplegable del usuario ---
+    function pmToggleMenu() {
+        document.getElementById('pmUserMenu').classList.toggle('open');
+    }
+    document.addEventListener('click', function (e) {
+        const menu = document.getElementById('pmUserMenu');
+        if (menu && !menu.contains(e.target)) menu.classList.remove('open');
+    });
+
+    function pmAbrirModal(id) {
+        document.getElementById('pmUserMenu')?.classList.remove('open');
+        document.getElementById(id).classList.add('open');
+    }
+    function pmCerrarModal(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    function pmIniciales(nombre) {
+        return nombre ? nombre.trim().charAt(0).toUpperCase() : 'A';
+    }
+
+    // --- Apartado "En línea" (widget embebido, se auto-actualiza) ---
+    async function pmCargarEnLinea() {
+        const cont = document.getElementById('pmListaEnLinea');
+        if (!cont) return; // esta página no tiene el widget embebido
+
+        try {
+            const res = await fetch('/api/usuarios/en_linea');
+            if (!res.ok) throw new Error('No se pudo obtener la lista');
+            const data = await res.json();
+
+            const contador = document.getElementById('pmOnlineCount');
+            if (contador) contador.textContent = data.total;
+
+            if (!data.conectados || data.conectados.length === 0) {
+                cont.innerHTML = '<p class="pm-empty">No hay nadie más en línea en este momento.</p>';
+                return;
+            }
+
+            cont.innerHTML = '<div class="pm-online-grid">' + data.conectados.map(function (u) {
+                const avatar = u.foto
+                    ? '<img class="pm-online-avatar" src="' + u.foto + '" alt="' + u.username + '">'
+                    : '<span class="pm-online-avatar">' + pmIniciales(u.nombre) + '</span>';
+                return '' +
+                    '<div class="pm-online-item">' +
+                        avatar +
+                        '<div class="pm-online-info">' +
+                            '<strong>' + u.nombre + '</strong>' +
+                            '<span>@' + u.username + (u.puesto ? ' · ' + u.puesto : '') + '</span>' +
+                        '</div>' +
+                        '<div class="pm-online-status"><span class="dot"></span> ' + u.ultima_actividad + '</div>' +
+                    '</div>';
+            }).join('') + '</div>';
+        } catch (err) {
+            cont.innerHTML = '<p class="pm-empty">Ocurrió un error al cargar los usuarios en línea.</p>';
+        }
+    }
+
+    // Primera carga y luego actualización automática cada 8 segundos
+    document.addEventListener('DOMContentLoaded', function () {
+        pmCargarEnLinea();
+        setInterval(pmCargarEnLinea, 8000);
+    });
+
+    // --- Apartado "Perfil" ---
+    let pmFotoSeleccionada = null;
+
+    async function pmAbrirPerfil() {
+        pmAbrirModal('pmOverlayPerfil');
+        document.getElementById('pmPerfilMsg').innerHTML = '';
+        try {
+            const res = await fetch('/api/perfil');
+            if (!res.ok) throw new Error('No se pudo obtener el perfil');
+            const data = await res.json();
+            document.getElementById('pmPerfilUsername').value = data.username || '';
+            document.getElementById('pmPerfilNombre').value = data.nombre || '';
+            document.getElementById('pmPerfilPuesto').value = data.puesto || '';
+            pmActualizarPreviewFoto(data.foto, data.nombre);
+        } catch (err) {
+            document.getElementById('pmPerfilMsg').innerHTML = '<p class="pm-msg err">No se pudo cargar tu perfil.</p>';
+        }
+    }
+
+    function pmActualizarPreviewFoto(foto, nombre) {
+        const preview = document.getElementById('pmPerfilFotoPreview');
+        if (foto) {
+            preview.outerHTML = '<img id="pmPerfilFotoPreview" class="pm-perfil-foto-preview" src="' + foto + '" style="width:80px;height:80px;">';
+        } else {
+            preview.outerHTML = '<span id="pmPerfilFotoPreview" class="pm-perfil-foto-preview">' + pmIniciales(nombre) + '</span>';
+        }
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.id === 'pmInputFoto') {
+            const file = e.target.files[0];
+            if (!file) return;
+            pmFotoSeleccionada = file;
+            pmSubirFotoPerfil(file);
+        }
+    });
+
+    async function pmSubirFotoPerfil(file) {
+        const msg = document.getElementById('pmPerfilMsg');
+        const formData = new FormData();
+        formData.append('imagen_archivo', file);
+        try {
+            const res = await fetch('/api/perfil/foto', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Error al subir la foto');
+            pmActualizarPreviewFoto(data.foto, document.getElementById('pmPerfilNombre').value);
+            pmActualizarAvatarTopbar(data.foto);
+            msg.innerHTML = '<p class="pm-msg ok">Foto actualizada correctamente.</p>';
+        } catch (err) {
+            msg.innerHTML = '<p class="pm-msg err">' + err.message + '</p>';
+        }
+    }
+
+    function pmActualizarAvatarTopbar(foto) {
+        const wrap = document.getElementById('pmAvatarWrap');
+        if (!wrap) return;
+        wrap.innerHTML = foto
+            ? '<img src="' + foto + '" alt="avatar">'
+            : wrap.innerHTML;
+    }
+
+    async function pmGuardarPerfil(e) {
+        e.preventDefault();
+        const msg = document.getElementById('pmPerfilMsg');
+        const formData = new FormData();
+        formData.append('nombre', document.getElementById('pmPerfilNombre').value.trim());
+        formData.append('puesto', document.getElementById('pmPerfilPuesto').value.trim());
+        try {
+            const res = await fetch('/api/perfil/editar', { method: 'POST', body: formData });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'No se pudo guardar el perfil');
+            msg.innerHTML = '<p class="pm-msg ok">Perfil actualizado correctamente.</p>';
+            const nameEl = document.getElementById('pmUserName');
+            if (nameEl) nameEl.textContent = document.getElementById('pmPerfilNombre').value.trim();
+        } catch (err) {
+            msg.innerHTML = '<p class="pm-msg err">' + err.message + '</p>';
+        }
+        return false;
+    }
+</script>

@@ -3,13 +3,20 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from pathlib import Path
 from datetime import datetime
+from decimal import Decimal, ROUND_HALF_UP
 
-RAIZ = Path(__file__).resolve().parent
-CARPETA_DATOS = RAIZ / "datos"
-CARPETA_DATOS.mkdir(exist_ok=True)
+RAIZ = Path(__file__).resolve().parent.parent
+CARPETA_BASE = RAIZ / "datos_facturacion"
+CARPETA_DATOS = CARPETA_BASE / "datos"
+CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
 
 # Apuntamos a la carpeta de usuarios para localizar el users.db del Login
-CARPETA_USUARIOS = RAIZ / "usuarios"
+CARPETA_USUARIOS = CARPETA_BASE / "usuarios"
+CARPETA_USUARIOS.mkdir(parents=True, exist_ok=True)
+
+
+def redondear_monto(valor: float) -> float:
+    return float(Decimal(str(valor)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
 
 class DetalleVenta(BaseModel):
     producto_id: int
@@ -51,7 +58,7 @@ class VentaDB:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     cliente_id INTEGER,
                     empleado_id INTEGER,
-                    total REAL NOT NULL,
+                    total NUMERIC(10,2) NOT NULL,
                     metodo_pago TEXT DEFAULT 'Efectivo',
                     estado TEXT DEFAULT 'Completada',
                     fecha_venta TEXT,
@@ -67,9 +74,9 @@ class VentaDB:
                     venta_id INTEGER,
                     producto_id INTEGER,
                     cantidad INTEGER,
-                    precio_unitario REAL,
-                    iva REAL,
-                    subtotal REAL,
+                    precio_unitario NUMERIC(10,2),
+                    iva NUMERIC(5,2),
+                    subtotal NUMERIC(10,2),
                     FOREIGN KEY(venta_id) REFERENCES ventas(id)
                 )
             """)
@@ -93,19 +100,21 @@ class VentaDB:
                 cursor.execute("""
                     INSERT INTO ventas (cliente_id, empleado_id, total, metodo_pago, fecha_venta, fecha_completa)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (venta.cliente_id, venta.empleado_id, venta.total, venta.metodo_pago, f_dia, f_completa))
+                """, (venta.cliente_id, venta.empleado_id, redondear_monto(venta.total), venta.metodo_pago, f_dia, f_completa))
                 
                 venta_id = cursor.lastrowid
                 
                 # Insertar cada artículo comprado en el detalle
                 for d in venta.detalles:
-                    precio_con_iva = d.precio_unitario * (1 + d.iva / 100)
-                    subtotal = d.cantidad * precio_con_iva
+                    precio_unitario = redondear_monto(d.precio_unitario)
+                    iva = redondear_monto(d.iva)
+                    precio_con_iva = redondear_monto(precio_unitario * (1 + iva / 100))
+                    subtotal = redondear_monto(d.cantidad * precio_con_iva)
                     
                     cursor.execute("""
                         INSERT INTO detalles_ventas (venta_id, producto_id, cantidad, precio_unitario, iva, subtotal)
                         VALUES (?, ?, ?, ?, ?, ?)
-                    """, (venta_id, d.producto_id, d.cantidad, d.precio_unitario, d.iva, subtotal))
+                    """, (venta_id, d.producto_id, d.cantidad, precio_unitario, iva, subtotal))
                     
                     # Reducir el stock del producto vendido
                     cursor.execute("""
@@ -212,3 +221,119 @@ class VentaDB:
             venta["productos"] = [dict(p_row) for p_row in cursor.fetchall()]
             
             return venta
+    def obtener_metodos_pago(self) -> List[Dict[str, Any]]:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT metodo_pago, COUNT(id) AS cantidad, SUM(total) AS total
+                FROM ventas
+                WHERE estado = 'Completada'
+                GROUP BY metodo_pago
+                ORDER BY cantidad DESC
+            """)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_top_productos(self, limite: int = 5) -> List[Dict[str, Any]]:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.nombre AS nombre_producto, 
+                    SUM(dv.cantidad) AS cantidad_vendida,
+                    SUM(dv.subtotal) AS total_generado
+                FROM detalles_ventas dv
+                JOIN productos p ON dv.producto_id = p.id
+                JOIN ventas v ON dv.venta_id = v.id
+                WHERE v.estado = 'Completada'
+                GROUP BY dv.producto_id
+                ORDER BY cantidad_vendida DESC
+                LIMIT ?
+            """, (limite,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_top_clientes(self, limite: int = 5) -> List[Dict[str, Any]]:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT c.nombre AS nombre_cliente, 
+                    COUNT(v.id) AS cantidad_compras,
+                    SUM(v.total) AS total_gastado
+                FROM ventas v
+                JOIN clientes c ON v.cliente_id = c.id
+                WHERE v.estado = 'Completada'
+                GROUP BY v.cliente_id
+                ORDER BY total_gastado DESC
+                LIMIT ?
+            """, (limite,))
+            return [dict(row) for row in cursor.fetchall()]
+
+    def obtener_rendimiento_empleados(self) -> List[Dict[str, Any]]:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT u.username AS nombre_empleado,
+                    COUNT(v.id) AS cantidad_ventas,
+                    SUM(v.total) AS total_facturado,
+                    AVG(v.total) AS ticket_promedio
+                FROM ventas v
+                JOIN db_usuarios.users u ON v.empleado_id = u.id
+                WHERE v.estado = 'Completada'
+                GROUP BY v.empleado_id
+                ORDER BY total_facturado DESC
+            """)
+            resultados = [dict(row) for row in cursor.fetchall()]
+            
+            # Calcular porcentaje de rendimiento
+            if resultados:
+                max_total = resultados[0]['total_facturado'] if resultados else 1
+                for r in resultados:
+                    r['porcentaje'] = (r['total_facturado'] / max_total * 100) if max_total > 0 else 0
+            return resultados
+
+    def obtener_total_ventas_periodo(self, dias: int = 30) -> float:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT SUM(total) AS total
+                FROM ventas
+                WHERE estado = 'Completada' 
+                AND fecha_venta >= date('now', ?)
+            """, (f'-{dias} days',))
+            row = cursor.fetchone()
+            return row['total'] if row and row['total'] else 0.0
+
+    def obtener_cantidad_ventas_periodo(self, dias: int = 30) -> int:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT COUNT(id) AS cantidad
+                FROM ventas
+                WHERE estado = 'Completada' 
+                AND fecha_venta >= date('now', ?)
+            """, (f'-{dias} days',))
+            row = cursor.fetchone()
+            return row['cantidad'] if row else 0
+
+    def obtener_ticket_promedio_periodo(self, dias: int = 30) -> float:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT AVG(total) AS promedio
+                FROM ventas
+                WHERE estado = 'Completada' 
+                AND fecha_venta >= date('now', ?)
+            """, (f'-{dias} days',))
+            row = cursor.fetchone()
+            return row['promedio'] if row and row['promedio'] else 0.0
+
+    def obtener_productos_vendidos_periodo(self, dias: int = 30) -> int:
+        with self.obtener_conexion() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT SUM(dv.cantidad) AS total
+                FROM detalles_ventas dv
+                JOIN ventas v ON dv.venta_id = v.id
+                WHERE v.estado = 'Completada' 
+                AND v.fecha_venta >= date('now', ?)
+            """, (f'-{dias} days',))
+            row = cursor.fetchone()
+            return row['total'] if row and row['total'] else 0

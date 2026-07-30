@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySYS | Panel Auditoría</title>
+    <title>MySYS | Usuarios en línea</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
@@ -552,9 +552,9 @@
             <li><a href="/admin/productos"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
             <li><a href="/admin/clientes"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
             <li><a href="/admin/estadistica"><i class="fa-solid fa-chart-line nav-icon"></i> Estadísticas</a></li>
-            <li><a href="/admin/auditoria"class="active"><i class="fa-solid fa-shield-halved nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-halved nav-icon"></i> Auditoría</a></li>
             <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
-            <li><a href="/admin/en_linea"><i class="fa-solid fa-circle-nodes nav-icon"></i> Usuarios en línea</a></li>
+            <li><a href="/admin/en_linea" class="active"><i class="fa-solid fa-circle-nodes nav-icon"></i> Usuarios en línea</a></li>
             <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
         </ul>
     </aside>
@@ -562,8 +562,8 @@
     <div class="main-content">
         <header class="topbar">
             <div class="action-title">
-                <h2>Historial de Auditoría Interna</h2>
-                <p>Seguimiento de accesos, operaciones y seguridad en tiempo real</p>
+                <h2>Usuarios en línea</h2>
+                <p>Quién está usando el sistema en este momento, actualizado en tiempo real</p>
             </div>
             <div class="user-profile pm-user-menu" id="pmUserMenu">
                 <button class="pm-user-trigger" onclick="pmToggleMenu()" type="button">
@@ -586,59 +586,12 @@
         </header>
 
         <main class="content-area">
-            <section class="card">
-                <div class="card-header">
-                    <h3>Registros del Sistema (Filtrados por Fecha Local)</h3>
-                    <i class="fa-solid fa-fingerprint" style="color: var(--hadrox-blue); font-size: 18px;"></i>
-                </div>
-                
-                <div class="table-container">
-                    {% if logs_auditoria %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Fecha / Hora Real</th>
-                                <th>Usuario</th>
-                                <th>Operación</th>
-                                <th>Tabla Módulo</th>
-                                <th>ID Ref</th>
-                                <th>Descripción de Actividad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for log in logs_auditoria %}
-                            <tr>
-                                <td><span style="color: var(--hadrox-navy); font-weight: 600;">{{ log.fecha_hora }}</span></td>
-                                <td><span style="font-weight: 600; color: var(--hadrox-text);"><i class="fa-regular fa-user" style="margin-right: 6px; color: var(--hadrox-light);"></i>{{ log.usuario }} (ID: {{ log.usuario_id }})</span></td>
-                                <td>
-                                    {% if log.accion == 'LOGIN' %}
-                                        <span class="badge badge-login">{{ log.accion }}</span>
-                                    {% elif log.accion == 'LOGOUT' %}
-                                        <span class="badge badge-logout">{{ log.accion }}</span>
-                                    {% elif log.accion == 'INSERT' %}
-                                        <span class="badge badge-insert">{{ log.accion }}</span>
-                                    {% elif log.accion == 'UPDATE' %}
-                                        <span class="badge badge-update">{{ log.accion }}</span>
-                                    {% elif log.accion == 'DELETE' %}
-                                        <span class="badge badge-delete">{{ log.accion }}</span>
-                                    {% else %}
-                                        <span class="badge">{{ log.accion }}</span>
-                                    {% endif %}
-                                </td>
-                                <td><span style="font-family: monospace; background: #f1f5f9; padding: 3px 6px; border-radius: 4px; font-size: 12.5px; border: 1px solid var(--hadrox-border);">{{ log.tabla }}</span></td>
-                                <td><span style="font-weight: 700; color: var(--hadrox-navy);">{{ log.registro_id if log.registro_id else '-' }}</span></td>
-                                <td><span style="color: var(--hadrox-text); font-size: 13px; font-weight: 500;">{{ log.detalles }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% else %}
-                    <p style="padding: 40px; color: var(--hadrox-light); text-align: center; font-weight: 500;">No se han encontrado actividades registradas en la auditoría.</p>
-                    {% endif %}
-                </div>
-            </section>
+
+            {% include "_en_linea_widget.html" %}
+
         </main>
     </div>
+
     <script src="{{ url_for('static', path='js/presencia.js') }}"></script>
     {% include "_perfil_modales.html" %}
 </body>

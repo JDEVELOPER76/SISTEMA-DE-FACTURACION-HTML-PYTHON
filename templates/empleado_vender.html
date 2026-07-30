@@ -3,77 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MySYS | Terminal de Ventas</title>
+    <title>MySYS | Punto de Venta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/hadrox-shared.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/empleado_vender.css') }}">
 </head>
 <body>
 
-    <div style="display: flex; flex-direction: column; width: 100%;">
+    <!-- Navbar Superior -->
+    <div style="display: flex; flex-direction: column; width: 100%; min-height: 100vh; background: var(--hadrox-bg);">
         <div class="top-navbar">
-            <span style="font-family: 'Poppins'; font-weight: 600; font-size: 14px; letter-spacing: 0.5px;">My <span style="color:var(--hadrox-blue)">SYS</span></span>
-            <div style="display: flex; gap: 20px; align-items: center;">
+            <span class="brand">My<span class="brand-accent">SYS</span></span>
+
+            <nav class="employee-nav">
+                <a href="/user/vender" class="nav-link active">
+                    <i class="fa-solid fa-cash-register"></i><span class="nav-label">Ventas</span>
+                </a>
+                <a href="/code" class="nav-link">
+                    <i class="fa-solid fa-barcode"></i><span class="nav-label">Escáner</span>
+                </a>
+                <a href="/user/sala" class="nav-link">
+                    <i class="fa-solid fa-id-badge"></i><span class="nav-label">Mi Perfil</span>
+                </a>
+            </nav>
+
+            <div class="navbar-right">
                 <div id="scannerStatus" class="scanner-status">
-                    <i class="fa-solid fa-barcode"></i>
-                    <span>Esperando escáner...</span>
+                    <span class="status-dot"></span>
+                    <span id="scannerStatusText">Verificando escáner...</span>
                 </div>
-                <a href="/logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
+                <a href="/logout" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</a>
             </div>
         </div>
 
+        <!-- Contenedor Principal de Ventas -->
         <div class="sales-container">
+
+            <!-- CATÁLOGO DE PRODUCTOS -->
             <section class="catalog-section">
                 <div class="catalog-header">
-                    <h2>Módulo de Facturación</h2>
+                    <h2><i class="fa-solid fa-boxes-stacked" style="color: var(--hadrox-blue);"></i> Productos</h2>
                     <div class="search-container">
                         <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" id="search-input" class="search-input" placeholder="Buscar producto por nombre..." oninput="filtrarProductos()">
+                        <input type="text" id="search-input" class="search-input" placeholder="Buscar producto..." oninput="filtrarProductos()">
                     </div>
                 </div>
 
                 <div class="products-grid" id="products-grid">
-                    {% for p in productos %}
-                    <div class="product-card" data-nombre="{{ p.nombre | lower }}" data-id="{{ p.id }}">
+                    {% for producto in productos %}
+                    <div class="product-card" data-id="{{ producto.id }}" data-nombre="{{ producto.nombre|lower }}">
                         <div class="product-image-container">
-                            {% if p.imagen_url %}
-                                {% if p.imagen_url.startswith('http://') or p.imagen_url.startswith('https://') or p.imagen_url.startswith('/') %}
-                                    <img src="{{ p.imagen_url }}" alt="{{ p.nombre }}" class="product-img">
-                                {% else %}
-                                    <img src="/{{ p.imagen_url }}" alt="{{ p.nombre }}" class="product-img">
-                                {% endif %}
+                            {% if producto.imagen_url %}
+                                <img src="{{ producto.imagen_url }}" alt="{{ producto.nombre }}" class="product-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                                <div class="no-image-placeholder" style="display:none;">
+                                    <i class="fa-solid fa-image"></i>
+                                    <span>Sin imagen</span>
+                                </div>
                             {% else %}
                                 <div class="no-image-placeholder">
-                                    <i class="fa-solid fa-box-open"></i>
-                                    <span>Sin Foto</span>
+                                    <i class="fa-solid fa-image"></i>
+                                    <span>Sin imagen</span>
                                 </div>
                             {% endif %}
                         </div>
-
                         <div class="product-info">
-                            <h4>{{ p.nombre }}</h4>
-                            
+                            <h4>{{ producto.nombre }}</h4>
                             <div class="product-tech-details">
                                 <div class="tech-row">
-                                    <span><i class="fa-solid fa-barcode"></i> {{ p.codigo_barras if p.codigo_barras else 'S/C' }}</span>
-                                    <span style="font-weight: 600; color: #475569;">
-                                        IVA {{ p.iva | int }}%
+                                    <span><i class="fa-solid fa-tag"></i> {{ producto.categoria or 'General' }}</span>
+                                    <span class="badge-stock {% if producto.stock > 5 %}in-stock{% else %}low-stock{% endif %}">
+                                        {{ producto.stock }} uds
                                     </span>
                                 </div>
-                                <div class="tech-row" style="margin-top: 1px;">
-                                    <span>Stock disponible:</span>
-                                    <span class="badge-stock {% if p.stock > 0 %}in-stock{% else %}low-stock{% endif %}">
-                                        {{ p.stock }} und
-                                    </span>
+                                <div class="tech-row">
+                                    <span><i class="fa-solid fa-barcode"></i> {{ producto.codigo_barras }}</span>
+                                    <span><i class="fa-solid fa-percent"></i> IVA {{ producto.iva }}%</span>
                                 </div>
                             </div>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 2px;">
-                                <p class="product-price">${{ "%.2f"|format(p.precio) }}</p>
-                                <button class="btn-add-cart" onclick="agregarAlCarrito({{ p.id }}, '{{ p.nombre }}', {{ p.precio }}, {{ p.iva or 0 }})">
-                                    <i class="fa-solid fa-plus"></i> Añadir
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                                <span class="product-price">${{ "%.2f"|format(producto.precio) }}</span>
+                                <button class="btn-add-cart" onclick="agregarAlCarrito({{ producto.id }}, '{{ producto.nombre }}', {{ producto.precio }}, {{ producto.iva }})">
+                                    <i class="fa-solid fa-cart-plus"></i> Añadir
                                 </button>
                             </div>
                         </div>
@@ -82,99 +95,206 @@
                 </div>
             </section>
 
+            <!-- PANEL DE PAGO / FACTURACIÓN -->
             <section class="checkout-section">
                 <div class="checkout-header">
-                    <i class="fa-solid fa-basket-shopping"></i>
-                    <h3>Orden de Despacho</h3>
+                    <i class="fa-solid fa-receipt"></i>
+                    <h3>Carrito de Compras</h3>
+                    <span id="cart-count" style="margin-left: auto; background: var(--hadrox-blue); color: white; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">0</span>
                 </div>
 
+                <!-- Configuración de cliente mejorada -->
                 <div class="transaction-config">
                     <div class="config-group">
-                        <label for="cliente-select">Cliente</label>
-                        <select id="cliente-select" class="config-select">
-                            {% for c in clientes %}
-                            <option value="{{ c.id }}">{{ c.nombre }} ({{ c.cedula }})</option>
-                            {% endfor %}
-                        </select>
+                        <label><i class="fa-solid fa-user"></i> Cliente</label>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="cliente-select" class="config-select" style="flex: 1;">
+                                <option value="">Cliente General</option>
+                                {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}" data-detalle='{"id":"{{ cliente.id }}","nombre":"{{ cliente.nombre }}","identificacion":"{{ cliente.identificacion or '' }}","tipo_identificacion":"{{ cliente.tipo_identificacion or '' }}","telefono":"{{ cliente.telefono or '' }}","direccion":"{{ cliente.direccion or '' }}","email":"{{ cliente.email or '' }}"}'>
+                                        {{ cliente.nombre }}
+                                        {% if cliente.identificacion %}
+                                            ({{ cliente.identificacion }})
+                                        {% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" id="btnAgregarCliente" 
+                                    style="padding: 8px 14px; background: var(--hadrox-blue); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                <i class="fa-solid fa-plus"></i> Nuevo
+                            </button>
+                        </div>
+                        
+                        <!-- Buscador rápido de clientes -->
+                        <div style="margin-top: 6px;">
+                            <input type="text" id="busquedaCliente" class="config-select" placeholder="Buscar cliente por nombre o identificación..." 
+                                   style="width: 100%; padding: 8px 12px; font-size: 13px;">
+                            <div id="resultadosBusqueda" style="display: none; background: white; border: 1px solid var(--hadrox-border); border-radius: 8px; margin-top: 4px; max-height: 150px; overflow-y: auto; position: relative; z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                        </div>
+                        
+                        <!-- Detalle del cliente seleccionado -->
+                        <div id="clienteDetalle" style="display: none; margin-top: 8px; background: #f8fafc; border: 1px solid var(--hadrox-border); border-radius: 8px; padding: 10px 14px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: 12px;">
+                                <div style="grid-column: 1 / -1; font-weight: 600; color: var(--hadrox-navy); margin-bottom: 2px;" id="clienteDetalleNombre">-</div>
+                                <div><span style="color: var(--hadrox-light);">ID:</span> <span id="clienteDetalleID" style="font-weight: 500;">-</span></div>
+                                <div><span style="color: var(--hadrox-light);">Teléfono:</span> <span id="clienteDetalleTelefono" style="font-weight: 500;">-</span></div>
+                                <div style="grid-column: 1 / -1;"><span style="color: var(--hadrox-light);">Dirección:</span> <span id="clienteDetalleDireccion" style="font-weight: 500;">-</span></div>
+                                <div style="grid-column: 1 / -1;"><span style="color: var(--hadrox-light);">Email:</span> <span id="clienteDetalleEmail" style="font-weight: 500;">-</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="config-group">
-                        <label for="pago-select">Método de Pago</label>
+                        <label><i class="fa-solid fa-credit-card"></i> Método de Pago</label>
                         <select id="pago-select" class="config-select">
-                            <option value="Efectivo" selected>💵 Efectivo</option>
-                            <option value="Transferencia">🏦 Transferencia Bancaria</option>
-                            <option value="Tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                            <option value="efectivo">💰 Efectivo</option>
+                            <option value="tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                            <option value="transferencia">🏦 Transferencia Bancaria</option>
+                            <option value="credito">📋 Crédito</option>
+                            <option value="otros">🔄 Otros</option>
                         </select>
                     </div>
                 </div>
 
+                <!-- Lista del Carrito -->
                 <div class="cart-items-container" id="cart-container">
                     <p style="text-align:center; color: var(--hadrox-light); font-size:13px; margin-top:40px; font-weight:500;">El carrito de compras está vacío.</p>
                 </div>
 
+                <!-- Totales -->
                 <div class="totals-panel">
-                    <div class="total-row">
-                        <span style="color: var(--hadrox-light)">Subtotal 0%:</span>
-                        <span id="subtotal-0">$0.00</span>
-                    </div>
-                    <div class="total-row">
-                        <span style="color: var(--hadrox-light)">Subtotal IVA:</span>
-                        <span id="subtotal-iva">$0.00</span>
-                    </div>
-                    <div class="total-row">
-                        <span style="color: var(--hadrox-light)">Impuesto (IVA):</span>
-                        <span id="total-impuesto">$0.00</span>
-                    </div>
-                    <div class="total-row grand-total">
-                        <span>Total Cobrar:</span>
-                        <span id="grand-total">$0.00</span>
-                    </div>
+                    <div class="total-row grand-total"><span>TOTAL</span><span id="grand-total">$0.00</span></div>
                 </div>
 
                 <button class="btn-checkout" onclick="confirmarVenta()">
-                    <i class="fa-solid fa-cash-register"></i> Cobrar y Registrar Venta
+                    <i class="fa-solid fa-check"></i> Cobrar Venta
                 </button>
             </section>
         </div>
     </div>
 
-    <script src="{{ url_for('static', path='js/empleado_vender.js') }}"></script>
-
     <!-- Modal de Confirmación de Venta -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal-container">
             <div class="modal-header">
-                <i class="fa-solid fa-check-circle" style="font-size: 22px;"></i>
+                <i class="fa-solid fa-circle-check"></i>
                 <h2>Confirmar Venta</h2>
             </div>
             <div class="modal-body">
                 <div class="confirmation-details">
-                    <div class="detail-row">
-                        <span class="label"><i class="fa-solid fa-user"></i> Cliente:</span>
-                        <span class="value" id="modal-cliente">-</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label"><i class="fa-solid fa-credit-card"></i> Método de Pago:</span>
-                        <span class="value" id="modal-metodo">-</span>
-                    </div>
-                    <div class="detail-row total">
-                        <span class="label"><i class="fa-solid fa-calculator"></i> Total a Cobrar:</span>
-                        <span class="value" id="modal-total">$0.00</span>
-                    </div>
+                    <div class="detail-row"><span class="label">Cliente</span><span class="value" id="modal-cliente">-</span></div>
+                    <div class="detail-row"><span class="label">Método de Pago</span><span class="value" id="modal-metodo">-</span></div>
+                    <div class="detail-row total"><span class="label">Total a Cobrar</span><span class="value" id="modal-total">$0.00</span></div>
                 </div>
                 <div class="confirmation-message">
-                    <i class="fa-solid fa-info-circle"></i> ¿Deseas proceder con esta transacción?
+                    <i class="fa-solid fa-info-circle"></i> ¿Estás seguro de que deseas procesar esta venta?
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-modal cancel" onclick="cerrarModal()">
-                    <i class="fa-solid fa-times"></i> Cancelar
-                </button>
-                <button class="btn-modal confirm" onclick="confirmarOperacion()">
-                    <i class="fa-solid fa-check"></i> Confirmar Venta
-                </button>
+                <button class="btn-modal cancel" onclick="cerrarModal()"><i class="fa-solid fa-xmark"></i> Cancelar</button>
+                <button class="btn-modal confirm" onclick="confirmarOperacion()"><i class="fa-solid fa-check"></i> Confirmar Venta</button>
             </div>
         </div>
     </div>
+
+    <!-- Modal para Agregar Cliente (Mejorado) -->
+    <div class="modal-overlay" id="modalCliente">
+        <div class="modal-container" style="max-width: 580px;">
+            <div class="modal-header" style="background: var(--hadrox-navy);">
+                <i class="fa-solid fa-user-plus" style="color: white; font-size: 20px;"></i>
+                <h2 style="color: white; margin: 0; font-family: 'Poppins', sans-serif; font-size: 18px;">
+                    Nuevo Cliente
+                </h2>
+                <button class="modal-close-btn" id="cerrarModalCliente" style="margin-left: auto; background: none; border: none; color: white; font-size: 24px; cursor: pointer; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <form id="formNuevoCliente" style="padding: 24px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <!-- Nombre -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-user" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Nombre completo *
+                        </label>
+                        <input type="text" id="inputClienteNombre" required 
+                               style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s;">
+                    </div>
+                    
+                    <!-- Tipo de Identificación -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-id-card" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Tipo de ID
+                        </label>
+                        <select id="inputClienteTipoID" 
+                                style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; background: white;">
+                            <option value="cedula">Cédula</option>
+                            <option value="ruc">RUC</option>
+                            <option value="pasaporte">Pasaporte</option>
+                            <option value="cedula_extranjera">Cédula Extranjera</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Identificación -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-hashtag" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Número de ID
+                        </label>
+                        <input type="text" id="inputClienteID" placeholder="Ej: 1234567890"
+                               style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s;">
+                    </div>
+                    
+                    <!-- Teléfono -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-phone" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Teléfono
+                        </label>
+                        <input type="tel" id="inputClienteTelefono" placeholder="Ej: 099-123-4567"
+                               style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s;">
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-envelope" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Email
+                        </label>
+                        <input type="email" id="inputClienteEmail" placeholder="cliente@email.com"
+                               style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s;">
+                    </div>
+                    
+                    <!-- Dirección (ocupa toda la fila) -->
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label style="font-weight: 600; font-size: 13px; color: var(--hadrox-navy); display: block; margin-bottom: 4px;">
+                            <i class="fa-solid fa-location-dot" style="margin-right: 6px; color: var(--hadrox-blue);"></i>
+                            Dirección
+                        </label>
+                        <input type="text" id="inputClienteDireccion" placeholder="Calle principal #123, Ciudad"
+                               style="width: 100%; padding: 10px 14px; border: 1px solid var(--hadrox-border); border-radius: 8px; font-size: 14px; outline: none; transition: border 0.2s;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--hadrox-border);">
+                    <button type="button" class="btn-cancelar-cliente" id="cancelarCliente"
+                            style="flex: 1; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: var(--hadrox-bg); color: var(--hadrox-text); transition: all 0.2s;">
+                        Cancelar
+                    </button>
+                    <button type="submit" id="btnGuardarCliente"
+                            style="flex: 1; padding: 12px 20px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; background: var(--hadrox-success); color: white; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fa-solid fa-check"></i> Guardar Cliente
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', path='js/empleado_vender.js') }}"></script>
+    <script src="{{ url_for('static', path='js/presencia.js') }}"></script>
 </body>
 </html>

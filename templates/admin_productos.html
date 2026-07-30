@@ -8,7 +8,537 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Poppins:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/admin_productos.css') }}">
+    <style>
+        /* ============================================================
+           SISTEMA DE DISEÑO MySYS — basado en seguridad.html
+           ============================================================ */
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --bg-sidebar: #1e293b;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --text-sidebar: #cbd5e1;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --success-bg: #d1fae5;
+            --success-text: #065f46;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --warning-text: #92400e;
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --danger-text: #991b1b;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+            /* Alias de compatibilidad para estilos inline existentes */
+            --hadrox-blue: var(--primary);
+            --hadrox-navy: var(--text-main);
+            --hadrox-success: var(--success);
+            --hadrox-light: var(--text-muted);
+            --hadrox-border: var(--border);
+            --hadrox-danger: var(--danger);
+            --hadrox-warning: var(--warning);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            color: var(--text-sidebar);
+            padding: 1.5rem 0;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .sidebar-header h1 {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'Poppins', 'Inter', sans-serif;
+        }
+
+        .sidebar-header h1 span {
+            color: var(--primary);
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 0 0.75rem;
+            list-style: none;
+        }
+
+        .nav-menu li { margin-bottom: 0.25rem; }
+
+        .nav-menu li a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-sidebar);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-menu li a:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+
+        .nav-menu li a.active {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);
+        }
+
+        .nav-icon { width: 18px; text-align: center; }
+
+        .logout-item {
+            margin-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1rem;
+        }
+
+        .logout-item a, .logout-btn {
+            color: #fca5a5 !important;
+        }
+
+        .logout-item a:hover, .logout-btn:hover {
+            background-color: rgba(239, 68, 68, 0.15) !important;
+            color: #fecaca !important;
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+        }
+
+        .content-area { margin-top: 0; }
+
+        .topbar {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .action-title h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 0.35rem;
+            font-family: 'Poppins', 'Inter', sans-serif;
+        }
+
+        .action-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        /* --- Cards --- */
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        /* --- Tables --- */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: var(--bg-body);
+            padding: 0.85rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f9fafb; }
+
+        /* --- Badges --- */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.65rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: var(--success-bg); color: var(--success-text); }
+        .badge-warning { background: var(--warning-bg); color: var(--warning-text); }
+        .badge-danger  { background: var(--danger-bg); color: var(--danger-text); }
+        .badge-admin   { background: var(--primary-light); color: var(--primary); }
+        .badge-user    { background: var(--bg-body); color: var(--text-muted); }
+        .badge-login   { background: var(--success-bg); color: var(--success-text); }
+        .badge-logout  { background: var(--bg-body); color: var(--text-muted); }
+        .badge-insert  { background: var(--success-bg); color: var(--success-text); }
+        .badge-update  { background: var(--warning-bg); color: var(--warning-text); }
+        .badge-delete  { background: var(--danger-bg); color: var(--danger-text); }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.65rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: var(--bg-body);
+            color: var(--text-muted);
+            text-transform: capitalize;
+        }
+        .status-completado, .status-pagado, .status-completada { background: var(--success-bg); color: var(--success-text); }
+        .status-pendiente { background: var(--warning-bg); color: var(--warning-text); }
+        .status-cancelado, .status-cancelada, .status-anulado { background: var(--danger-bg); color: var(--danger-text); }
+
+        /* --- Buttons --- */
+        .btn-submit, .btn-primary, .btn-action, .btn-secondary, .btn-delete, .btn-danger-submit {
+            padding: 0.65rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-submit, .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-submit:hover, .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: var(--text-main);
+        }
+        .btn-secondary:hover { background-color: #d1d5db; }
+
+        .btn-delete, .btn-danger-submit {
+            background-color: var(--danger-bg);
+            color: var(--danger-text);
+            padding: 0.5rem 0.85rem;
+        }
+        .btn-delete:hover, .btn-danger-submit:hover { background-color: var(--danger); color: white; }
+
+        .btn-action {
+            background: var(--bg-body);
+            color: var(--text-main);
+            padding: 0.45rem 0.75rem;
+            font-size: 0.8rem;
+            margin-right: 0.35rem;
+        }
+        .btn-action:hover { background: var(--border); }
+
+        /* --- Forms --- */
+        .form-container, .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        .form-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-control {
+            padding: 0.65rem 0.85rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-main);
+            background: var(--bg-card);
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        .form-footer {
+            margin-top: 1.25rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+        }
+
+        .media-inputs { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        .file-btn {
+            position: relative;
+            padding: 0.65rem 1rem;
+            background: var(--bg-body);
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .file-btn input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* --- Metrics --- */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .metric-info p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; }
+        .metric-info h3 { font-size: 1.6rem; font-weight: 700; color: var(--text-main); }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .metric-icon.icon-success { background: var(--success-bg); color: var(--success-text); }
+        .metric-icon.icon-blue { background: var(--primary-light); color: var(--primary); }
+
+        /* --- Item / producto media --- */
+        .item-meta { display: flex; align-items: center; gap: 0.75rem; }
+        .item-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: var(--bg-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .item-info { display: flex; flex-direction: column; }
+        .item-info span { font-size: 0.75rem; color: var(--text-muted); }
+
+        .price-text { font-weight: 700; color: var(--text-main); }
+        .currency-format::before { content: "$"; }
+
+        /* --- Detalle de ventas expandibles --- */
+        .expand-btn {
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+        .expand-btn:hover { background: var(--primary-light); color: var(--primary); }
+
+        .details-row { display: none; }
+        .details-row.open { display: table-row; }
+        .details-cell { background: var(--bg-body); }
+        .details-content h4 { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .product-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+        .product-list li {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+        .product-name { font-weight: 600; color: var(--text-main); }
+        .product-details { color: var(--text-muted); }
+        .product-subtotal { font-weight: 700; color: var(--primary); }
+        .total-cell { font-weight: 700; color: var(--text-main); }
+
+        /* --- Modales --- */
+        .modal-overlay, .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active, .modal-overlay.open,
+        .modal.active, .modal.open {
+            display: flex;
+        }
+
+        .modal-container, .modal-content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 560px;
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-sidebar);
+            color: white;
+            border-radius: 12px 12px 0 0;
+        }
+        .modal-header h3 { font-size: 1.05rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+        .modal-close, .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .modal-body { padding: 1.5rem; }
+        .modal-footer {
+            padding: 1rem 1.5rem 1.5rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .actions-cell { display: flex; align-items: center; }
+
+        /* --- Responsivo --- */
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { margin-left: 0; padding: 1rem; }
+            body { flex-direction: column; }
+        }
+    </style>
 </head>
 <body>
 
@@ -18,11 +548,13 @@
         </div>
         <ul class="nav-menu">
             <li><a href="/admin"><i class="fa-solid fa-chart-pie nav-icon"></i> Dashboard</a></li>
-            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de ventas</a></li>
-            <li><a href="/admin/productos" class="active"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
+            <li><a href="/admin/ventas"><i class="fa-solid fa-receipt nav-icon"></i> Historial de Ventas</a></li>
+            <li><a href="/admin/productos"class="active"><i class="fa-solid fa-box nav-icon"></i> Productos</a></li>
             <li><a href="/admin/clientes"><i class="fa-solid fa-users nav-icon"></i> Clientes</a></li>
-            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-alt nav-icon"></i> Auditoría</a></li>
+            <li><a href="/admin/estadistica"><i class="fa-solid fa-chart-line nav-icon"></i> Estadísticas</a></li>
+            <li><a href="/admin/auditoria"><i class="fa-solid fa-shield-halved nav-icon"></i> Auditoría</a></li>
             <li><a href="/admin/usuarios"><i class="fa-solid fa-user-tie nav-icon"></i> Empleados</a></li>
+            <li><a href="/admin/en_linea"><i class="fa-solid fa-circle-nodes nav-icon"></i> Usuarios en línea</a></li>
             <li class="logout-item"><a href="/logout"><i class="fa-solid fa-right-from-bracket nav-icon"></i> Salir</a></li>
         </ul>
     </aside>
@@ -32,6 +564,24 @@
             <div class="action-title">
                 <h2>Control de Almacén e Inventario</h2>
                 <p>Gestión centralizada de artículos, impuestos y optimización de stock (Doble clic en fila para editar)</p>
+            </div>
+            <div class="user-profile pm-user-menu" id="pmUserMenu">
+                <button class="pm-user-trigger" onclick="pmToggleMenu()" type="button">
+                    <span class="pm-avatar-wrap" id="pmAvatarWrap">
+                        {% if foto %}
+                        <img src="{{ foto }}" alt="{{ username }}">
+                        {% else %}
+                        <span class="avatar">{{ (username[0] if username else 'A') | upper }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="pm-user-name" id="pmUserName">{{ username if username else 'Admin' }}</span>
+                    <i class="fa-solid fa-chevron-down pm-chevron"></i>
+                </button>
+                <div class="pm-dropdown">
+                    <a href="#" onclick="event.preventDefault(); pmAbrirPerfil();"><i class="fa-solid fa-user-gear"></i> Mi perfil</a>
+                    <div class="pm-divider"></div>
+                    <a href="/logout" class="pm-logout"><i class="fa-solid fa-right-from-bracket"></i> Salir</a>
+                </div>
             </div>
         </header>
 
@@ -224,5 +774,7 @@
     </div>
 
     <script src="{{ url_for('static', path='js/admin_productos.js') }}"></script>
+    <script src="{{ url_for('static', path='js/presencia.js') }}"></script>
+    {% include "_perfil_modales.html" %}
 </body>
 </html>

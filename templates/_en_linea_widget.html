@@ -1,0 +1,71 @@
+<style>
+    .en-linea-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        overflow: hidden;
+        background: var(--bg-body);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: var(--text-muted);
+    }
+    .en-linea-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .en-linea-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 0.4rem;
+    }
+    .en-linea-dot.vivo { background: var(--success); box-shadow: 0 0 0 3px var(--success-bg); }
+    .en-linea-dot.reciente { background: var(--warning); box-shadow: 0 0 0 3px var(--warning-bg); }
+
+    #enLineaVacio {
+        display: none;
+        text-align: center;
+        padding: 2rem 1rem;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="metrics-grid">
+    <div class="metric-card">
+        <div class="metric-info">
+            <p>Usuarios en línea ahora mismo</p>
+            <h3 id="totalEnLinea">0</h3>
+        </div>
+        <div class="metric-icon icon-success">
+            <i class="fa-solid fa-circle-nodes"></i>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-users"></i> Conectados</h3>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Puesto</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Última actividad</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoTablaEnLinea">
+                <!-- Se llena en tiempo real vía /ws/en_linea (ver admin_en_linea.js) -->
+            </tbody>
+        </table>
+        <p id="enLineaVacio">No hay usuarios conectados en este momento.</p>
+    </div>
+</div>
+
+<script src="{{ url_for('static', path='js/admin_en_linea.js') }}"></script>
